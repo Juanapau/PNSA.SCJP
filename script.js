@@ -179,9 +179,12 @@ async function cargarActividadesRA(raId) {
         state.actividades.push(...cached);
         // Cargar descripciones con moduloId
         await cargarDescripcionesActividades(state.moduloSeleccionado, raId);
-        // Precargar instrumentos configurados
-        await cargarInstrumentosRA(state.moduloSeleccionado, raId);
+        // Generar tabla INMEDIATAMENTE
         generarTablaActividades();
+        // Precargar instrumentos en segundo plano y regenerar cuando termine
+        cargarInstrumentosRA(state.moduloSeleccionado, raId).then(() => {
+            generarTablaActividades();
+        });
         return;
     }
     mostrarCargando(true, 'Cargando actividades del RA...');
@@ -194,9 +197,12 @@ async function cargarActividadesRA(raId) {
         state.actividades.push(...actividadesDelRA);
         // Cargar descripciones con moduloId
         await cargarDescripcionesActividades(state.moduloSeleccionado, raId);
-        // Precargar instrumentos configurados
-        await cargarInstrumentosRA(state.moduloSeleccionado, raId);
+        // Generar tabla INMEDIATAMENTE
         generarTablaActividades();
+        // Precargar instrumentos en segundo plano y regenerar cuando termine
+        cargarInstrumentosRA(state.moduloSeleccionado, raId).then(() => {
+            generarTablaActividades();
+        });
     } catch (error) {
         console.error('Error al cargar actividades:', error);
         generarTablaActividades();
@@ -453,18 +459,18 @@ function generarTablaActividades() {
         const descripcion = descripcionesActividades[i] || '';
         console.log(`  Ac.${i}: ${descripcion ? '✅ Tiene descripción' : '❌ Sin descripción'}`);
         if (descripcion) {
-            // Usar tooltip HTML real
             headerHTML += `
                 <th class="actividad-header header-actividad" data-num-actividad="${i}">
                     Ac.${i}
-                    <span class="info-icon config-icon" data-num-actividad="${i}">ℹ</span>
+                    <span class="info-icon config-icon" onclick="abrirModalConfigInstrumento(${state.moduloSeleccionado}, ${state.raSeleccionado}, ${i})">ℹ</span>
                     <div class="tooltip-bubble">${descripcion}</div>
                 </th>`;
         } else {
-            headerHTML += `<th class="actividad-header" data-num-actividad="${i}">
-                Ac.${i}
-                <span class="info-icon config-icon" data-num-actividad="${i}">ℹ</span>
-            </th>`;
+            headerHTML += `
+                <th class="actividad-header" data-num-actividad="${i}">
+                    Ac.${i}
+                    <span class="info-icon config-icon" onclick="abrirModalConfigInstrumento(${state.moduloSeleccionado}, ${state.raSeleccionado}, ${i})">ℹ</span>
+                </th>`;
         }
     }
     
@@ -2329,6 +2335,10 @@ function actualizarResumenDiasTrabajados() {
 }
 
 // ==========================================
+// SISTEMA DE INSTRUMENTOS DE EVALUACIÓN
+// ==========================================
+
+// ==========================================
 // MODAL DE CONFIGURACIÓN DE INSTRUMENTO
 // ==========================================
 
@@ -2336,10 +2346,9 @@ const modalConfigState = {
     moduloId: null,
     raId: null,
     numActividad: null,
-    criteriosCount: 0
+    criteriosCounter: 0
 };
 
-// Elementos del modal
 const modalConfigElementos = {
     modal: document.getElementById('modalConfigInstrumento'),
     overlay: document.querySelector('.modal-overlay-instrumento'),
@@ -2348,30 +2357,36 @@ const modalConfigElementos = {
     btnGuardar: document.getElementById('btnGuardarConfigInstrumento'),
     moduloNombre: document.getElementById('configModuloNombre'),
     raNombre: document.getElementById('configRANombre'),
-    actividadNombre: document.getElementById('configActividadNombre'),
+    actividadNum: document.getElementById('configActividadNum'),
     valorActividad: document.getElementById('configValorActividad'),
-    listaCriterios: document.getElementById('listaCriterios'),
+    criteriosSection: document.getElementById('configCriteriosSection'),
+    criteriosLista: document.getElementById('configCriteriosLista'),
     totalPuntos: document.getElementById('totalPuntosCriterios'),
-    btnAgregarCriterio: document.getElementById('btnAgregarCriterio'),
-    criteriosSection: document.getElementById('configCriteriosSection')
+    btnAgregarCriterio: document.getElementById('btnAgregarCriterio')
 };
 
 // Abrir modal de configuración
 async function abrirModalConfigInstrumento(moduloId, raId, numActividad) {
-    console.log(`📋 Abriendo config para Módulo ${moduloId}, RA ${raId}, Ac.${numActividad}`);
+    console.log(`⚙️ Abriendo configuración de instrumento: Módulo ${moduloId}, RA ${raId}, Ac.${numActividad}`);
     
     modalConfigState.moduloId = moduloId;
     modalConfigState.raId = raId;
     modalConfigState.numActividad = numActividad;
+    modalConfigState.criteriosCounter = 0;
     
-    // Obtener información del módulo y RA
+    // Obtener nombres para mostrar
     const modulo = state.modulos.find(m => m.id == moduloId);
     const ra = state.ras.find(r => r.id == raId);
     
-    // Actualizar información en el modal
     modalConfigElementos.moduloNombre.textContent = modulo ? modulo.nombre : '-';
-    modalConfigElementos.raNombre.textContent = ra ? `${ra.nombre} (${ra.valorTotal} pts)` : '-';
-    modalConfigElementos.actividadNombre.textContent = `Ac.${numActividad}`;
+    modalConfigElementos.raNombre.textContent = ra ? ra.nombre : '-';
+    modalConfigElementos.actividadNum.textContent = `Ac.${numActividad}`;
+    
+    // Limpiar formulario
+    modalConfigElementos.valorActividad.value = '';
+    modalConfigElementos.criteriosLista.innerHTML = '';
+    document.getElementById('radioSinInstrumento').checked = true;
+    modalConfigElementos.criteriosSection.style.display = 'none';
     
     // Cargar configuración existente si hay
     try {
@@ -2380,33 +2395,23 @@ async function abrirModalConfigInstrumento(moduloId, raId, numActividad) {
         const data = await response.json();
         
         if (data.success && data.configurado) {
-            // Ya existe configuración
             modalConfigElementos.valorActividad.value = data.valorActividad;
+            document.getElementById(`radio${capitalizeFirst(data.tipoInstrumento)}`).checked = true;
             
-            // Seleccionar tipo de instrumento
-            const radio = document.querySelector(`input[name="tipoInstrumento"][value="${data.tipoInstrumento}"]`);
-            if (radio) {
-                radio.checked = true;
-                if (data.tipoInstrumento !== 'sin_instrumento') {
-                    mostrarSeccionCriterios();
-                }
-            }
-            
-            // Cargar criterios si no es sin_instrumento
             if (data.tipoInstrumento !== 'sin_instrumento') {
+                modalConfigElementos.criteriosSection.style.display = 'block';
                 await cargarCriteriosExistentes(moduloId, raId, numActividad);
             }
-        } else {
-            // Nueva configuración
-            limpiarModalConfig();
         }
     } catch (error) {
         console.error('Error al cargar configuración:', error);
-        limpiarModalConfig();
     }
     
-    // Mostrar modal
     modalConfigElementos.modal.style.display = 'flex';
+}
+
+function capitalizeFirst(str) {
+    return str.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('');
 }
 
 // Cargar criterios existentes
@@ -2417,11 +2422,8 @@ async function cargarCriteriosExistentes(moduloId, raId, numActividad) {
         const data = await response.json();
         
         if (data.success && data.criterios.length > 0) {
-            modalConfigElementos.listaCriterios.innerHTML = '';
-            modalConfigState.criteriosCount = 0;
-            
-            data.criterios.forEach(crit => {
-                agregarCriterioConfig(crit.criterio, crit.puntajeMax);
+            data.criterios.forEach(criterio => {
+                agregarCriterioConfig(criterio.criterio, criterio.puntajeMax);
             });
         }
     } catch (error) {
@@ -2429,58 +2431,43 @@ async function cargarCriteriosExistentes(moduloId, raId, numActividad) {
     }
 }
 
-// Limpiar modal
-function limpiarModalConfig() {
-    modalConfigElementos.valorActividad.value = '';
-    document.querySelectorAll('input[name="tipoInstrumento"]').forEach(r => r.checked = false);
-    modalConfigElementos.listaCriterios.innerHTML = '';
-    modalConfigState.criteriosCount = 0;
-    modalConfigElementos.criteriosSection.style.display = 'none';
-    calcularTotalCriterios();
-}
-
 // Cerrar modal
 function cerrarModalConfigInstrumento() {
     modalConfigElementos.modal.style.display = 'none';
-    limpiarModalConfig();
 }
 
-// Mostrar sección de criterios
-function mostrarSeccionCriterios() {
-    modalConfigElementos.criteriosSection.style.display = 'block';
-    if (modalConfigElementos.listaCriterios.children.length === 0) {
-        agregarCriterioConfig();
-    }
-}
-
-// Ocultar sección de criterios
-function ocultarSeccionCriterios() {
-    modalConfigElementos.criteriosSection.style.display = 'none';
-}
+// Cambio de tipo de instrumento
+document.querySelectorAll('input[name="tipoInstrumento"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        if (this.value === 'sin_instrumento') {
+            modalConfigElementos.criteriosSection.style.display = 'none';
+        } else {
+            modalConfigElementos.criteriosSection.style.display = 'block';
+        }
+    });
+});
 
 // Agregar criterio
-function agregarCriterioConfig(nombre = '', puntaje = 1) {
-    modalConfigState.criteriosCount++;
-    const id = modalConfigState.criteriosCount;
+function agregarCriterioConfig(nombre = '', puntaje = '') {
+    modalConfigState.criteriosCounter++;
+    const id = modalConfigState.criteriosCounter;
     
     const div = document.createElement('div');
     div.className = 'criterio-item-config';
-    div.id = `criterio-config-${id}`;
+    div.setAttribute('data-criterio-id', id);
     div.innerHTML = `
         <div class="criterio-orden">${id}</div>
-        <input type="text" class="criterio-input-nombre" placeholder="Nombre del criterio" value="${nombre || `Criterio ${id}`}">
-        <input type="number" class="criterio-input-puntaje" min="0" step="0.5" value="${puntaje}">
-        <button type="button" class="btn-eliminar-criterio" data-criterio-id="${id}">×</button>
+        <input type="text" class="criterio-input-nombre" placeholder="Nombre del criterio" value="${nombre}" data-id="${id}">
+        <input type="number" class="criterio-input-puntaje" placeholder="Puntos" min="0" step="0.1" value="${puntaje}" data-id="${id}">
+        <button type="button" class="btn-eliminar-criterio" data-id="${id}">✕</button>
     `;
     
-    modalConfigElementos.listaCriterios.appendChild(div);
+    modalConfigElementos.criteriosLista.appendChild(div);
     
-    // Event listener para calcular total
+    // Event listeners
     div.querySelector('.criterio-input-puntaje').addEventListener('input', calcularTotalCriterios);
-    
-    // Event listener para eliminar
     div.querySelector('.btn-eliminar-criterio').addEventListener('click', function() {
-        eliminarCriterioConfig(id);
+        eliminarCriterioConfig(this.dataset.id);
     });
     
     calcularTotalCriterios();
@@ -2488,9 +2475,9 @@ function agregarCriterioConfig(nombre = '', puntaje = 1) {
 
 // Eliminar criterio
 function eliminarCriterioConfig(id) {
-    const elemento = document.getElementById(`criterio-config-${id}`);
-    if (elemento) {
-        elemento.remove();
+    const criterio = document.querySelector(`[data-criterio-id="${id}"]`);
+    if (criterio) {
+        criterio.remove();
         renumerarCriterios();
         calcularTotalCriterios();
     }
@@ -2498,142 +2485,117 @@ function eliminarCriterioConfig(id) {
 
 // Renumerar criterios
 function renumerarCriterios() {
-    const items = modalConfigElementos.listaCriterios.querySelectorAll('.criterio-item-config');
-    items.forEach((item, index) => {
-        item.querySelector('.criterio-orden').textContent = index + 1;
+    const criterios = modalConfigElementos.criteriosLista.querySelectorAll('.criterio-item-config');
+    criterios.forEach((criterio, index) => {
+        criterio.querySelector('.criterio-orden').textContent = index + 1;
     });
 }
 
-// Calcular total de puntos
+// Calcular total de criterios
 function calcularTotalCriterios() {
-    const inputs = modalConfigElementos.listaCriterios.querySelectorAll('.criterio-input-puntaje');
+    const inputs = modalConfigElementos.criteriosLista.querySelectorAll('.criterio-input-puntaje');
     let total = 0;
     inputs.forEach(input => {
-        total += parseFloat(input.value) || 0;
+        const valor = parseFloat(input.value) || 0;
+        total += valor;
     });
     modalConfigElementos.totalPuntos.textContent = total.toFixed(1);
 }
 
 // Guardar configuración
 async function guardarConfigInstrumento() {
-    // Validar valor de actividad
-    const valorActividad = parseFloat(modalConfigElementos.valorActividad.value);
-    if (!valorActividad || valorActividad <= 0) {
-        alert('⚠️ Por favor ingresa el valor de la actividad');
+    const valor = parseFloat(modalConfigElementos.valorActividad.value);
+    const tipoInstrumento = document.querySelector('input[name="tipoInstrumento"]:checked').value;
+    
+    if (!valor || valor <= 0) {
+        alert('⚠️ Por favor ingresa un valor válido para la actividad');
         return;
     }
     
-    // Validar tipo de instrumento
-    const tipoInstrumento = document.querySelector('input[name="tipoInstrumento"]:checked');
-    if (!tipoInstrumento) {
-        alert('⚠️ Por favor selecciona un tipo de instrumento');
-        return;
-    }
-    
-    const tipo = tipoInstrumento.value;
-    
-    // Si NO es sin_instrumento, validar criterios
-    if (tipo !== 'sin_instrumento') {
-        const criteriosItems = modalConfigElementos.listaCriterios.querySelectorAll('.criterio-item-config');
-        if (criteriosItems.length === 0) {
-            alert('⚠️ Por favor agrega al menos un criterio de evaluación');
+    if (tipoInstrumento !== 'sin_instrumento') {
+        const criterios = modalConfigElementos.criteriosLista.querySelectorAll('.criterio-item-config');
+        if (criterios.length === 0) {
+            alert('⚠️ Debes agregar al menos un criterio');
             return;
         }
         
         // Validar que todos los criterios tengan nombre y puntaje
-        let criteriosValidos = true;
-        criteriosItems.forEach(item => {
-            const nombre = item.querySelector('.criterio-input-nombre').value.trim();
-            const puntaje = parseFloat(item.querySelector('.criterio-input-puntaje').value);
+        let valido = true;
+        criterios.forEach(criterio => {
+            const nombre = criterio.querySelector('.criterio-input-nombre').value.trim();
+            const puntaje = parseFloat(criterio.querySelector('.criterio-input-puntaje').value);
             if (!nombre || !puntaje || puntaje <= 0) {
-                criteriosValidos = false;
+                valido = false;
             }
         });
         
-        if (!criteriosValidos) {
-            alert('⚠️ Todos los criterios deben tener nombre y puntaje mayor a 0');
+        if (!valido) {
+            alert('⚠️ Todos los criterios deben tener nombre y puntaje válido');
             return;
         }
     }
     
-    // Deshabilitar botón mientras guarda
     modalConfigElementos.btnGuardar.disabled = true;
     modalConfigElementos.btnGuardar.textContent = '⏳ Guardando...';
     
     try {
-        console.log('📤 Guardando instrumento:', {
-            moduloId: modalConfigState.moduloId,
-            raId: modalConfigState.raId,
-            numActividad: modalConfigState.numActividad,
-            tipo: tipo,
-            valor: valorActividad
-        });
-        
-        // 1. Guardar instrumento y valor usando POST tradicional
-        const formData1 = new URLSearchParams();
-        formData1.append('action', 'guardarInstrumentoActividad');
-        
+        // Guardar configuración del instrumento
         const dataInstrumento = {
             action: 'guardarInstrumentoActividad',
             moduloId: modalConfigState.moduloId,
             raId: modalConfigState.raId,
             numActividad: modalConfigState.numActividad,
-            tipoInstrumento: tipo,
-            valorActividad: valorActividad
+            tipoInstrumento: tipoInstrumento,
+            valorActividad: valor
         };
         
-        const responseInstrumento = await fetch(CONFIG.GOOGLE_SCRIPT_URL, {
+        const respInstrumento = await fetch(CONFIG.GOOGLE_SCRIPT_URL, {
             method: 'POST',
             body: JSON.stringify(dataInstrumento)
         });
         
-        const resultInstrumento = await responseInstrumento.json();
-        console.log('📥 Respuesta instrumento:', resultInstrumento);
+        const resultInstrumento = await respInstrumento.json();
         
         if (!resultInstrumento.success) {
-            throw new Error(resultInstrumento.error || 'Error al guardar instrumento');
+            throw new Error('Error al guardar configuración del instrumento');
         }
         
-        // 2. Si tiene criterios, guardarlos
-        if (tipo !== 'sin_instrumento') {
-            const criteriosItems = modalConfigElementos.listaCriterios.querySelectorAll('.criterio-item-config');
-            const criterios = [];
+        // Guardar criterios si no es sin_instrumento
+        if (tipoInstrumento !== 'sin_instrumento') {
+            const criteriosArray = [];
+            const criterios = modalConfigElementos.criteriosLista.querySelectorAll('.criterio-item-config');
             
-            criteriosItems.forEach((item, index) => {
-                criterios.push({
+            criterios.forEach((criterio, index) => {
+                criteriosArray.push({
                     orden: index + 1,
-                    criterio: item.querySelector('.criterio-input-nombre').value.trim(),
-                    puntajeMax: parseFloat(item.querySelector('.criterio-input-puntaje').value)
+                    criterio: criterio.querySelector('.criterio-input-nombre').value.trim(),
+                    puntajeMax: parseFloat(criterio.querySelector('.criterio-input-puntaje').value)
                 });
             });
-            
-            console.log('📤 Guardando criterios:', criterios);
             
             const dataCriterios = {
                 action: 'guardarCriteriosActividad',
                 moduloId: modalConfigState.moduloId,
                 raId: modalConfigState.raId,
                 numActividad: modalConfigState.numActividad,
-                criterios: criterios
+                criterios: criteriosArray
             };
             
-            const responseCriterios = await fetch(CONFIG.GOOGLE_SCRIPT_URL, {
+            const respCriterios = await fetch(CONFIG.GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 body: JSON.stringify(dataCriterios)
             });
             
-            const resultCriterios = await responseCriterios.json();
-            console.log('📥 Respuesta criterios:', resultCriterios);
+            const resultCriterios = await respCriterios.json();
             
             if (!resultCriterios.success) {
-                throw new Error(resultCriterios.error || 'Error al guardar criterios');
+                throw new Error('Error al guardar criterios');
             }
         }
         
         console.log('✅ Configuración guardada exitosamente');
         alert('✅ Configuración guardada exitosamente');
         
-        // Cerrar modal
         cerrarModalConfigInstrumento();
         
         // Recargar instrumentos y regenerar tabla
@@ -2658,38 +2620,6 @@ modalConfigElementos.overlay.addEventListener('click', cerrarModalConfigInstrume
 modalConfigElementos.btnGuardar.addEventListener('click', guardarConfigInstrumento);
 modalConfigElementos.btnAgregarCriterio.addEventListener('click', () => agregarCriterioConfig());
 
-// Event listeners para los radios de tipo de instrumento
-document.querySelectorAll('input[name="tipoInstrumento"]').forEach(radio => {
-    radio.addEventListener('change', function() {
-        if (this.value === 'sin_instrumento') {
-            ocultarSeccionCriterios();
-        } else {
-            mostrarSeccionCriterios();
-        }
-    });
-});
-
-// ==========================================
-// EVENT LISTENER PARA ABRIR MODAL CONFIG
-// ==========================================
-
-// Detectar click en icono de configuración
-document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('config-icon')) {
-        const numActividad = parseInt(e.target.dataset.numActividad);
-        
-        if (state.moduloSeleccionado && state.raSeleccionado) {
-            abrirModalConfigInstrumento(
-                state.moduloSeleccionado,
-                state.raSeleccionado,
-                numActividad
-            );
-        } else {
-            alert('⚠️ Por favor selecciona primero un módulo y un RA');
-        }
-    }
-});
-
 // ==========================================
 // MODAL DE EVALUACIÓN CON INSTRUMENTO
 // ==========================================
@@ -2705,7 +2635,6 @@ const modalEvalState = {
     evaluaciones: {}
 };
 
-// Elementos del modal
 const modalEvalElementos = {
     modal: document.getElementById('modalEvaluacion'),
     overlay: document.querySelector('.modal-overlay-evaluacion'),
@@ -2738,7 +2667,6 @@ async function abrirModalEvaluacion(estudianteId, moduloId, raId, numActividad) 
     modalEvalState.numActividad = numActividad;
     modalEvalState.evaluaciones = {};
     
-    // Obtener información del estudiante
     const estudiante = state.estudiantes.find(e => e.id == estudianteId);
     const modulo = state.modulos.find(m => m.id == moduloId);
     const ra = state.ras.find(r => r.id == raId);
@@ -2747,7 +2675,6 @@ async function abrirModalEvaluacion(estudianteId, moduloId, raId, numActividad) 
     modalEvalElementos.detalleActividad.textContent = `${modulo ? modulo.nombre : '-'} • ${ra ? ra.nombre : '-'} • Ac.${numActividad}`;
     
     try {
-        // 1. Obtener configuración del instrumento
         const urlInstrumento = `${CONFIG.GOOGLE_SCRIPT_URL}?action=getInstrumentoActividad&moduloId=${moduloId}&raId=${raId}&numActividad=${numActividad}`;
         const respInstrumento = await fetchConTimeout(urlInstrumento);
         const dataInstrumento = await respInstrumento.json();
@@ -2763,7 +2690,6 @@ async function abrirModalEvaluacion(estudianteId, moduloId, raId, numActividad) 
         modalEvalElementos.valorActividad.textContent = dataInstrumento.valorActividad;
         modalEvalElementos.valorBase.textContent = dataInstrumento.valorActividad;
         
-        // Actualizar título según tipo
         const titulos = {
             'lista_cotejo': '✓ Lista de Cotejo',
             'rubrica': '⭐ Rúbrica',
@@ -2771,7 +2697,6 @@ async function abrirModalEvaluacion(estudianteId, moduloId, raId, numActividad) 
         };
         modalEvalElementos.titulo.textContent = titulos[dataInstrumento.tipoInstrumento] || 'Evaluar Actividad';
         
-        // 2. Obtener criterios
         const urlCriterios = `${CONFIG.GOOGLE_SCRIPT_URL}?action=getCriteriosActividad&moduloId=${moduloId}&raId=${raId}&numActividad=${numActividad}`;
         const respCriterios = await fetchConTimeout(urlCriterios);
         const dataCriterios = await respCriterios.json();
@@ -2783,11 +2708,9 @@ async function abrirModalEvaluacion(estudianteId, moduloId, raId, numActividad) 
         
         modalEvalState.criterios = dataCriterios.criterios;
         
-        // Calcular total de puntos criterios
         const totalPuntos = dataCriterios.criterios.reduce((sum, c) => sum + c.puntajeMax, 0);
         modalEvalElementos.puntosMaximos.textContent = totalPuntos.toFixed(1);
         
-        // 3. Cargar evaluación existente si hay
         const urlEvaluacion = `${CONFIG.GOOGLE_SCRIPT_URL}?action=getEvaluacionDetallada&estudianteId=${estudianteId}&moduloId=${moduloId}&raId=${raId}&numActividad=${numActividad}`;
         const respEvaluacion = await fetchConTimeout(urlEvaluacion);
         const dataEvaluacion = await respEvaluacion.json();
@@ -2798,7 +2721,6 @@ async function abrirModalEvaluacion(estudianteId, moduloId, raId, numActividad) 
             });
         }
         
-        // 4. Mostrar instrumento correspondiente
         ocultarTodosInstrumentos();
         
         switch (modalEvalState.tipoInstrumento) {
@@ -2816,10 +2738,7 @@ async function abrirModalEvaluacion(estudianteId, moduloId, raId, numActividad) 
                 break;
         }
         
-        // Calcular nota inicial
         calcularNotaFinal();
-        
-        // Mostrar modal
         modalEvalElementos.modal.style.display = 'flex';
         
     } catch (error) {
@@ -2828,18 +2747,16 @@ async function abrirModalEvaluacion(estudianteId, moduloId, raId, numActividad) 
     }
 }
 
-// Ocultar todos los instrumentos
 function ocultarTodosInstrumentos() {
     modalEvalElementos.instrumentoCotejo.style.display = 'none';
     modalEvalElementos.instrumentoRubrica.style.display = 'none';
     modalEvalElementos.instrumentoEscala.style.display = 'none';
 }
 
-// Generar Lista de Cotejo
 function generarListaCotejo() {
     modalEvalElementos.listaCotejo.innerHTML = '';
     
-    modalEvalState.criterios.forEach((criterio, index) => {
+    modalEvalState.criterios.forEach((criterio) => {
         const checked = modalEvalState.evaluaciones[criterio.orden] === criterio.puntajeMax ? 'checked' : '';
         
         const div = document.createElement('div');
@@ -2857,15 +2774,10 @@ function generarListaCotejo() {
         
         const checkbox = div.querySelector('.eval-checkbox');
         checkbox.addEventListener('change', function() {
-            if (this.checked) {
-                modalEvalState.evaluaciones[criterio.orden] = criterio.puntajeMax;
-            } else {
-                modalEvalState.evaluaciones[criterio.orden] = 0;
-            }
+            modalEvalState.evaluaciones[criterio.orden] = this.checked ? criterio.puntajeMax : 0;
             calcularNotaFinal();
         });
         
-        // Inicializar evaluación
         if (checked) {
             modalEvalState.evaluaciones[criterio.orden] = criterio.puntajeMax;
         } else if (!(criterio.orden in modalEvalState.evaluaciones)) {
@@ -2876,11 +2788,10 @@ function generarListaCotejo() {
     });
 }
 
-// Generar Rúbrica
 function generarRubrica() {
     modalEvalElementos.listaRubrica.innerHTML = '';
     
-    modalEvalState.criterios.forEach((criterio, index) => {
+    modalEvalState.criterios.forEach((criterio) => {
         const evalActual = modalEvalState.evaluaciones[criterio.orden] || 0;
         
         const niveles = [
@@ -2914,21 +2825,16 @@ function generarRubrica() {
                 const orden = parseInt(this.dataset.orden);
                 const valor = parseFloat(this.dataset.valor);
                 
-                // Quitar selected de todos los botones de este criterio
                 this.closest('.eval-niveles-rubrica').querySelectorAll('.eval-nivel-btn').forEach(b => {
                     b.classList.remove('selected');
                 });
                 
-                // Agregar selected a este botón
                 this.classList.add('selected');
-                
-                // Guardar evaluación
                 modalEvalState.evaluaciones[orden] = valor;
                 calcularNotaFinal();
             });
         });
         
-        // Inicializar evaluación
         if (!(criterio.orden in modalEvalState.evaluaciones)) {
             modalEvalState.evaluaciones[criterio.orden] = 0;
         }
@@ -2937,11 +2843,10 @@ function generarRubrica() {
     });
 }
 
-// Generar Escala
 function generarEscala() {
     modalEvalElementos.listaEscala.innerHTML = '';
     
-    modalEvalState.criterios.forEach((criterio, index) => {
+    modalEvalState.criterios.forEach((criterio) => {
         const evalActual = modalEvalState.evaluaciones[criterio.orden];
         let nivelActual = 0;
         
@@ -2977,25 +2882,19 @@ function generarEscala() {
                 const nivel = parseInt(this.dataset.nivel);
                 const puntajeMax = parseFloat(this.dataset.puntajeMax);
                 
-                // Quitar selected de todos
                 this.closest('.eval-escala-numeros').querySelectorAll('.eval-escala-btn').forEach(b => {
                     b.classList.remove('selected');
                 });
                 
-                // Agregar selected
                 this.classList.add('selected');
-                
-                // Actualizar texto
                 this.closest('.eval-escala-container').querySelector('.eval-escala-valor').textContent = `${nivel}/5`;
                 
-                // Calcular puntaje proporcional
                 const puntaje = (nivel / 5) * puntajeMax;
                 modalEvalState.evaluaciones[orden] = puntaje;
                 calcularNotaFinal();
             });
         });
         
-        // Inicializar evaluación
         if (!(criterio.orden in modalEvalState.evaluaciones)) {
             modalEvalState.evaluaciones[criterio.orden] = 0;
         }
@@ -3004,38 +2903,29 @@ function generarEscala() {
     });
 }
 
-// Calcular nota final
 function calcularNotaFinal() {
-    // Sumar puntos obtenidos
     let puntosObtenidos = 0;
     Object.values(modalEvalState.evaluaciones).forEach(val => {
         puntosObtenidos += val || 0;
     });
     
-    // Total de puntos máximos de criterios
     const puntosMaximos = modalEvalState.criterios.reduce((sum, c) => sum + c.puntajeMax, 0);
-    
-    // Calcular nota final proporcional
     const notaFinal = puntosMaximos > 0 ? (puntosObtenidos / puntosMaximos) * modalEvalState.valorActividad : 0;
     
-    // Actualizar UI
     modalEvalElementos.puntosObtenidos.textContent = puntosObtenidos.toFixed(1);
     modalEvalElementos.notaFinal.textContent = notaFinal.toFixed(2);
 }
 
-// Cerrar modal
 function cerrarModalEvaluacion() {
     modalEvalElementos.modal.style.display = 'none';
     modalEvalState.evaluaciones = {};
 }
 
-// Guardar evaluación
 async function guardarEvaluacion() {
     modalEvalElementos.btnGuardar.disabled = true;
     modalEvalElementos.btnGuardar.textContent = '⏳ Guardando...';
     
     try {
-        // Preparar evaluaciones
         const evaluaciones = [];
         modalEvalState.criterios.forEach(criterio => {
             evaluaciones.push({
@@ -3044,12 +2934,10 @@ async function guardarEvaluacion() {
             });
         });
         
-        // Calcular nota final
         const puntosObtenidos = Object.values(modalEvalState.evaluaciones).reduce((sum, val) => sum + (val || 0), 0);
         const puntosMaximos = modalEvalState.criterios.reduce((sum, c) => sum + c.puntajeMax, 0);
         const notaFinal = puntosMaximos > 0 ? (puntosObtenidos / puntosMaximos) * modalEvalState.valorActividad : 0;
         
-        // Guardar evaluación detallada
         const dataEval = {
             action: 'guardarEvaluacionDetallada',
             estudianteId: modalEvalState.estudianteId,
@@ -3070,7 +2958,6 @@ async function guardarEvaluacion() {
             throw new Error('Error al guardar evaluación detallada');
         }
         
-        // Guardar nota final en hoja Actividades
         const dataActividad = {
             action: 'guardarActividad',
             estudianteId: modalEvalState.estudianteId,
@@ -3079,26 +2966,19 @@ async function guardarEvaluacion() {
             valor: parseFloat(notaFinal.toFixed(2))
         };
         
-        console.log('📤 Guardando en Actividades:', dataActividad);
-        
         const respActividad = await fetch(CONFIG.GOOGLE_SCRIPT_URL, {
             method: 'POST',
             body: JSON.stringify(dataActividad)
         });
         
         const resultActividad = await respActividad.json();
-        console.log('📥 Respuesta de Actividades:', resultActividad);
         
         if (!resultActividad.success) {
             throw new Error('Error al guardar calificación en Actividades');
         }
         
-        console.log('✅ Evaluación guardada exitosamente');
-        
-        // OPTIMIZACIÓN: Actualizar directamente el state y la celda sin recargar
         const notaFinalRedondeada = parseFloat(notaFinal.toFixed(2));
         
-        // Actualizar en memoria
         let actividadEnState = state.actividades.find(a => 
             a.estudianteId == modalEvalState.estudianteId && 
             a.numero == modalEvalState.numActividad && 
@@ -3116,12 +2996,10 @@ async function guardarEvaluacion() {
             });
         }
         
-        // Actualizar directamente el input en la tabla
         const input = document.querySelector(`input[data-estudiante="${modalEvalState.estudianteId}"][data-actividad="${modalEvalState.numActividad}"][data-ra="${modalEvalState.raId}"]`);
         if (input) {
             input.value = notaFinalRedondeada;
             
-            // Actualizar el total de la fila
             const fila = input.closest('tr');
             if (fila) {
                 const inputs = fila.querySelectorAll('.input-actividad');
@@ -3137,9 +3015,7 @@ async function guardarEvaluacion() {
             }
         }
         
-        // Cerrar modal
         cerrarModalEvaluacion();
-        
         alert('✅ Evaluación guardada: ' + notaFinalRedondeada + ' pts');
         
     } catch (error) {
@@ -3151,59 +3027,23 @@ async function guardarEvaluacion() {
     }
 }
 
-// Event listeners
 modalEvalElementos.btnCerrar.addEventListener('click', cerrarModalEvaluacion);
 modalEvalElementos.btnCancelar.addEventListener('click', cerrarModalEvaluacion);
 modalEvalElementos.overlay.addEventListener('click', cerrarModalEvaluacion);
 modalEvalElementos.btnGuardar.addEventListener('click', guardarEvaluacion);
 
 // ==========================================
-// DETECTAR CLICK EN CELDAS PARA EVALUACIÓN
-// ==========================================
-
-// Usar 'mousedown' en lugar de 'click' para capturar ANTES de que el input se active
-document.addEventListener('mousedown', function(e) {
-    // Si el click fue en un input de actividad
-    if (e.target.classList.contains('input-actividad')) {
-        const input = e.target;
-        const celda = input.closest('.celda-actividad-eval');
-        
-        if (celda) {
-            const estudianteId = celda.dataset.estudiante;
-            const numActividad = parseInt(celda.dataset.actividad);
-            const raId = celda.dataset.ra;
-            const moduloId = celda.dataset.modulo;
-            
-            // Verificar si tiene instrumento configurado (DESDE CACHÉ - INSTANTÁNEO)
-            const instrumento = tieneInstrumentoConfigurado(moduloId, raId, numActividad);
-            
-            if (instrumento) {
-                // Tiene instrumento, prevenir que el input se active y abrir modal
-                e.preventDefault();
-                e.stopPropagation();
-                input.blur(); // Quitar foco si lo tiene
-                abrirModalEvaluacion(estudianteId, moduloId, raId, numActividad);
-            }
-            // Si no tiene instrumento, dejar que el input funcione normal
-        }
-    }
-});
-
-// ==========================================
-// OPTIMIZACIÓN: CACHÉ DE INSTRUMENTOS
+// CACHÉ Y CARGA DE INSTRUMENTOS
 // ==========================================
 
 const instrumentosCache = {
-    configuraciones: {}, // { "moduloId_raId_numActividad": { tipoInstrumento, valorActividad } }
-    criterios: {}        // { "moduloId_raId_numActividad": [...criterios] }
+    configuraciones: {}
 };
 
-// Cargar instrumentos configurados para el RA actual
 async function cargarInstrumentosRA(moduloId, raId) {
     console.log('📋 Precargando instrumentos configurados...');
     
     try {
-        // Cargar instrumentos para todas las actividades de este RA
         const promesas = [];
         
         for (let i = 1; i <= CONFIG.NUM_ACTIVIDADES; i++) {
@@ -3237,14 +3077,38 @@ async function cargarInstrumentosRA(moduloId, raId) {
     }
 }
 
-// Verificar si una actividad tiene instrumento (desde caché)
 function tieneInstrumentoConfigurado(moduloId, raId, numActividad) {
     const clave = `${moduloId}_${raId}_${numActividad}`;
     return instrumentosCache.configuraciones[clave] || null;
 }
 
-// Limpiar caché de instrumentos
 function limpiarCacheInstrumentos() {
     instrumentosCache.configuraciones = {};
-    instrumentosCache.criterios = {};
 }
+
+// ==========================================
+// INTEGRACIÓN CON TABLA DE ACTIVIDADES
+// ==========================================
+
+document.addEventListener('mousedown', function(e) {
+    if (e.target.classList.contains('input-actividad')) {
+        const input = e.target;
+        const celda = input.closest('.celda-actividad-eval');
+        
+        if (celda) {
+            const estudianteId = celda.dataset.estudiante;
+            const numActividad = parseInt(celda.dataset.actividad);
+            const raId = celda.dataset.ra;
+            const moduloId = celda.dataset.modulo;
+            
+            const instrumento = tieneInstrumentoConfigurado(moduloId, raId, numActividad);
+            
+            if (instrumento) {
+                e.preventDefault();
+                e.stopPropagation();
+                input.blur();
+                abrirModalEvaluacion(estudianteId, moduloId, raId, numActividad);
+            }
+        }
+    }
+});
