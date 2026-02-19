@@ -451,13 +451,16 @@ function generarTablaActividades() {
         if (descripcion) {
             // Usar tooltip HTML real
             headerHTML += `
-                <th class="actividad-header header-actividad">
+                <th class="actividad-header header-actividad" data-num-actividad="${i}">
                     Ac.${i}
-                    <span class="info-icon">ℹ</span>
+                    <span class="info-icon config-icon" data-num-actividad="${i}">ℹ</span>
                     <div class="tooltip-bubble">${descripcion}</div>
                 </th>`;
         } else {
-            headerHTML += `<th class="actividad-header">Ac.${i}</th>`;
+            headerHTML += `<th class="actividad-header" data-num-actividad="${i}">
+                Ac.${i}
+                <span class="info-icon config-icon" data-num-actividad="${i}">ℹ</span>
+            </th>`;
         }
     }
     
@@ -2301,3 +2304,347 @@ function actualizarResumenDiasTrabajados() {
     
     console.log(`📊 Días trabajados: ${diasTrabajados} (contando solo días con P/E/A)`);
 }
+
+// ==========================================
+// MODAL DE CONFIGURACIÓN DE INSTRUMENTO
+// ==========================================
+
+const modalConfigState = {
+    moduloId: null,
+    raId: null,
+    numActividad: null,
+    criteriosCount: 0
+};
+
+// Elementos del modal
+const modalConfigElementos = {
+    modal: document.getElementById('modalConfigInstrumento'),
+    overlay: document.querySelector('.modal-overlay-instrumento'),
+    btnCerrar: document.getElementById('btnCerrarConfigInstrumento'),
+    btnCancelar: document.getElementById('btnCancelarConfigInstrumento'),
+    btnGuardar: document.getElementById('btnGuardarConfigInstrumento'),
+    moduloNombre: document.getElementById('configModuloNombre'),
+    raNombre: document.getElementById('configRANombre'),
+    actividadNombre: document.getElementById('configActividadNombre'),
+    valorActividad: document.getElementById('configValorActividad'),
+    listaCriterios: document.getElementById('listaCriterios'),
+    totalPuntos: document.getElementById('totalPuntosCriterios'),
+    btnAgregarCriterio: document.getElementById('btnAgregarCriterio'),
+    criteriosSection: document.getElementById('configCriteriosSection')
+};
+
+// Abrir modal de configuración
+async function abrirModalConfigInstrumento(moduloId, raId, numActividad) {
+    console.log(`📋 Abriendo config para Módulo ${moduloId}, RA ${raId}, Ac.${numActividad}`);
+    
+    modalConfigState.moduloId = moduloId;
+    modalConfigState.raId = raId;
+    modalConfigState.numActividad = numActividad;
+    
+    // Obtener información del módulo y RA
+    const modulo = state.modulos.find(m => m.id == moduloId);
+    const ra = state.ras.find(r => r.id == raId);
+    
+    // Actualizar información en el modal
+    modalConfigElementos.moduloNombre.textContent = modulo ? modulo.nombre : '-';
+    modalConfigElementos.raNombre.textContent = ra ? `${ra.nombre} (${ra.valorTotal} pts)` : '-';
+    modalConfigElementos.actividadNombre.textContent = `Ac.${numActividad}`;
+    
+    // Cargar configuración existente si hay
+    try {
+        const url = `${CONFIG.GOOGLE_SCRIPT_URL}?action=getInstrumentoActividad&moduloId=${moduloId}&raId=${raId}&numActividad=${numActividad}`;
+        const response = await fetchConTimeout(url);
+        const data = await response.json();
+        
+        if (data.success && data.configurado) {
+            // Ya existe configuración
+            modalConfigElementos.valorActividad.value = data.valorActividad;
+            
+            // Seleccionar tipo de instrumento
+            const radio = document.querySelector(`input[name="tipoInstrumento"][value="${data.tipoInstrumento}"]`);
+            if (radio) {
+                radio.checked = true;
+                if (data.tipoInstrumento !== 'sin_instrumento') {
+                    mostrarSeccionCriterios();
+                }
+            }
+            
+            // Cargar criterios si no es sin_instrumento
+            if (data.tipoInstrumento !== 'sin_instrumento') {
+                await cargarCriteriosExistentes(moduloId, raId, numActividad);
+            }
+        } else {
+            // Nueva configuración
+            limpiarModalConfig();
+        }
+    } catch (error) {
+        console.error('Error al cargar configuración:', error);
+        limpiarModalConfig();
+    }
+    
+    // Mostrar modal
+    modalConfigElementos.modal.style.display = 'flex';
+}
+
+// Cargar criterios existentes
+async function cargarCriteriosExistentes(moduloId, raId, numActividad) {
+    try {
+        const url = `${CONFIG.GOOGLE_SCRIPT_URL}?action=getCriteriosActividad&moduloId=${moduloId}&raId=${raId}&numActividad=${numActividad}`;
+        const response = await fetchConTimeout(url);
+        const data = await response.json();
+        
+        if (data.success && data.criterios.length > 0) {
+            modalConfigElementos.listaCriterios.innerHTML = '';
+            modalConfigState.criteriosCount = 0;
+            
+            data.criterios.forEach(crit => {
+                agregarCriterioConfig(crit.criterio, crit.puntajeMax);
+            });
+        }
+    } catch (error) {
+        console.error('Error al cargar criterios:', error);
+    }
+}
+
+// Limpiar modal
+function limpiarModalConfig() {
+    modalConfigElementos.valorActividad.value = '';
+    document.querySelectorAll('input[name="tipoInstrumento"]').forEach(r => r.checked = false);
+    modalConfigElementos.listaCriterios.innerHTML = '';
+    modalConfigState.criteriosCount = 0;
+    modalConfigElementos.criteriosSection.style.display = 'none';
+    calcularTotalCriterios();
+}
+
+// Cerrar modal
+function cerrarModalConfigInstrumento() {
+    modalConfigElementos.modal.style.display = 'none';
+    limpiarModalConfig();
+}
+
+// Mostrar sección de criterios
+function mostrarSeccionCriterios() {
+    modalConfigElementos.criteriosSection.style.display = 'block';
+    if (modalConfigElementos.listaCriterios.children.length === 0) {
+        agregarCriterioConfig();
+    }
+}
+
+// Ocultar sección de criterios
+function ocultarSeccionCriterios() {
+    modalConfigElementos.criteriosSection.style.display = 'none';
+}
+
+// Agregar criterio
+function agregarCriterioConfig(nombre = '', puntaje = 1) {
+    modalConfigState.criteriosCount++;
+    const id = modalConfigState.criteriosCount;
+    
+    const div = document.createElement('div');
+    div.className = 'criterio-item-config';
+    div.id = `criterio-config-${id}`;
+    div.innerHTML = `
+        <div class="criterio-orden">${id}</div>
+        <input type="text" class="criterio-input-nombre" placeholder="Nombre del criterio" value="${nombre || `Criterio ${id}`}">
+        <input type="number" class="criterio-input-puntaje" min="0" step="0.5" value="${puntaje}">
+        <button type="button" class="btn-eliminar-criterio" data-criterio-id="${id}">×</button>
+    `;
+    
+    modalConfigElementos.listaCriterios.appendChild(div);
+    
+    // Event listener para calcular total
+    div.querySelector('.criterio-input-puntaje').addEventListener('input', calcularTotalCriterios);
+    
+    // Event listener para eliminar
+    div.querySelector('.btn-eliminar-criterio').addEventListener('click', function() {
+        eliminarCriterioConfig(id);
+    });
+    
+    calcularTotalCriterios();
+}
+
+// Eliminar criterio
+function eliminarCriterioConfig(id) {
+    const elemento = document.getElementById(`criterio-config-${id}`);
+    if (elemento) {
+        elemento.remove();
+        renumerarCriterios();
+        calcularTotalCriterios();
+    }
+}
+
+// Renumerar criterios
+function renumerarCriterios() {
+    const items = modalConfigElementos.listaCriterios.querySelectorAll('.criterio-item-config');
+    items.forEach((item, index) => {
+        item.querySelector('.criterio-orden').textContent = index + 1;
+    });
+}
+
+// Calcular total de puntos
+function calcularTotalCriterios() {
+    const inputs = modalConfigElementos.listaCriterios.querySelectorAll('.criterio-input-puntaje');
+    let total = 0;
+    inputs.forEach(input => {
+        total += parseFloat(input.value) || 0;
+    });
+    modalConfigElementos.totalPuntos.textContent = total.toFixed(1);
+}
+
+// Guardar configuración
+async function guardarConfigInstrumento() {
+    // Validar valor de actividad
+    const valorActividad = parseFloat(modalConfigElementos.valorActividad.value);
+    if (!valorActividad || valorActividad <= 0) {
+        alert('⚠️ Por favor ingresa el valor de la actividad');
+        return;
+    }
+    
+    // Validar tipo de instrumento
+    const tipoInstrumento = document.querySelector('input[name="tipoInstrumento"]:checked');
+    if (!tipoInstrumento) {
+        alert('⚠️ Por favor selecciona un tipo de instrumento');
+        return;
+    }
+    
+    const tipo = tipoInstrumento.value;
+    
+    // Si NO es sin_instrumento, validar criterios
+    if (tipo !== 'sin_instrumento') {
+        const criteriosItems = modalConfigElementos.listaCriterios.querySelectorAll('.criterio-item-config');
+        if (criteriosItems.length === 0) {
+            alert('⚠️ Por favor agrega al menos un criterio de evaluación');
+            return;
+        }
+        
+        // Validar que todos los criterios tengan nombre y puntaje
+        let criteriosValidos = true;
+        criteriosItems.forEach(item => {
+            const nombre = item.querySelector('.criterio-input-nombre').value.trim();
+            const puntaje = parseFloat(item.querySelector('.criterio-input-puntaje').value);
+            if (!nombre || !puntaje || puntaje <= 0) {
+                criteriosValidos = false;
+            }
+        });
+        
+        if (!criteriosValidos) {
+            alert('⚠️ Todos los criterios deben tener nombre y puntaje mayor a 0');
+            return;
+        }
+    }
+    
+    // Deshabilitar botón mientras guarda
+    modalConfigElementos.btnGuardar.disabled = true;
+    modalConfigElementos.btnGuardar.textContent = '⏳ Guardando...';
+    
+    try {
+        // 1. Guardar instrumento y valor
+        const responseInstrumento = await fetch(CONFIG.GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'guardarInstrumentoActividad',
+                moduloId: modalConfigState.moduloId,
+                raId: modalConfigState.raId,
+                numActividad: modalConfigState.numActividad,
+                tipoInstrumento: tipo,
+                valorActividad: valorActividad
+            })
+        });
+        
+        const dataInstrumento = await responseInstrumento.json();
+        
+        if (!dataInstrumento.success) {
+            throw new Error('Error al guardar instrumento');
+        }
+        
+        // 2. Si tiene criterios, guardarlos
+        if (tipo !== 'sin_instrumento') {
+            const criteriosItems = modalConfigElementos.listaCriterios.querySelectorAll('.criterio-item-config');
+            const criterios = [];
+            
+            criteriosItems.forEach((item, index) => {
+                criterios.push({
+                    orden: index + 1,
+                    criterio: item.querySelector('.criterio-input-nombre').value.trim(),
+                    puntajeMax: parseFloat(item.querySelector('.criterio-input-puntaje').value)
+                });
+            });
+            
+            const responseCriterios = await fetch(CONFIG.GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'guardarCriteriosActividad',
+                    moduloId: modalConfigState.moduloId,
+                    raId: modalConfigState.raId,
+                    numActividad: modalConfigState.numActividad,
+                    criterios: criterios
+                })
+            });
+            
+            const dataCriterios = await responseCriterios.json();
+            
+            if (!dataCriterios.success) {
+                throw new Error('Error al guardar criterios');
+            }
+        }
+        
+        console.log('✅ Configuración guardada exitosamente');
+        alert('✅ Configuración guardada exitosamente');
+        
+        // Cerrar modal
+        cerrarModalConfigInstrumento();
+        
+        // Actualizar tabla de actividades si está visible
+        if (state.vistaActual === 'actividades') {
+            generarTablaActividades();
+        }
+        
+    } catch (error) {
+        console.error('Error al guardar configuración:', error);
+        alert('❌ Error al guardar la configuración. Intenta de nuevo.');
+    } finally {
+        modalConfigElementos.btnGuardar.disabled = false;
+        modalConfigElementos.btnGuardar.textContent = '💾 Guardar Configuración';
+    }
+}
+
+// Event listeners del modal de configuración
+modalConfigElementos.btnCerrar.addEventListener('click', cerrarModalConfigInstrumento);
+modalConfigElementos.btnCancelar.addEventListener('click', cerrarModalConfigInstrumento);
+modalConfigElementos.overlay.addEventListener('click', cerrarModalConfigInstrumento);
+modalConfigElementos.btnGuardar.addEventListener('click', guardarConfigInstrumento);
+modalConfigElementos.btnAgregarCriterio.addEventListener('click', () => agregarCriterioConfig());
+
+// Event listeners para los radios de tipo de instrumento
+document.querySelectorAll('input[name="tipoInstrumento"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        if (this.value === 'sin_instrumento') {
+            ocultarSeccionCriterios();
+        } else {
+            mostrarSeccionCriterios();
+        }
+    });
+});
+
+// ==========================================
+// EVENT LISTENER PARA ABRIR MODAL CONFIG
+// ==========================================
+
+// Detectar click en icono de configuración
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('config-icon')) {
+        const numActividad = parseInt(e.target.dataset.numActividad);
+        
+        if (state.moduloSeleccionado && state.raSeleccionado) {
+            abrirModalConfigInstrumento(
+                state.moduloSeleccionado,
+                state.raSeleccionado,
+                numActividad
+            );
+        } else {
+            alert('⚠️ Por favor selecciona primero un módulo y un RA');
+        }
+    }
+});
