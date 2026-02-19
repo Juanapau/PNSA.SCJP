@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#2e7d32">
+    <title>Sistema de Calificaciones - PNSA</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Botón flotante para abrir menú -->
+    <button id="btnAbrirMenu" class="btn-menu-flotante" aria-label="Abrir menú">
+        <span class="icono-menu">☰</span>
+    </button>
+
+    <!-- Overlay oscuro -->
+    <div id="menuOverlay" class="menu-overlay"></div>
+
+    <!-- Panel lateral del menú -->
+    <div id="menuLateral" class="menu-lateral">
+        <div class="menu-header">
+            <h2>📋 Menú Principal</h2>
+            <button id="btnCerrarMenu" class="btn-cerrar-menu" aria-label="Cerrar menú">✕</button>
+        </div>
+
+        <div class="menu-contenido">
+            <!-- Modo oscuro/claro -->
+            <div class="menu-seccion">
+                <h3>⚙️ Configuración</h3>
+                <button id="btnModoOscuroMenu" class="menu-item-config">
+                    <span class="icono-config">
+                        <span class="icono-sol-menu">☀️</span>
+                        <span class="icono-luna-menu">🌙</span>
+                    </span>
+                    <span class="texto-config">Modo <span id="textoModo">Claro</span></span>
+                    <span class="toggle-switch"></span>
+                </button>
+            </div>
+
+            <!-- Separador -->
+            <div class="menu-separador"></div>
+
+            <!-- Navegación -->
+            <div class="menu-seccion">
+                <h3>📂 Navegación</h3>
+                <button id="menuRegistroCalif" class="menu-item">
+                    <span class="menu-icono">📝</span>
+                    <span class="menu-texto">Registro de Calificaciones</span>
+                </button>
+                <button id="menuRegistroAct" class="menu-item">
+                    <span class="menu-icono">📊</span>
+                    <span class="menu-texto">Registro de Actividades</span>
+                </button>
+                <button id="menuRegistroAsist" class="menu-item">
+                    <span class="menu-icono">📋</span>
+                    <span class="menu-texto">Registro de Asistencia</span>
+                </button>
+            </div>
+
+            <!-- Footer del menú -->
+            <div class="menu-footer">
+                <p>Sistema PNSA v2.0</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <!-- Vista Principal: Registro de Calificaciones -->
+        <div id="vistaRegistro" class="vista-principal">
+            <div class="filtros-seccion-compacta">
+                <h3 class="filtros-titulo-compacto">📋 Filtros de Selección</h3>
+                <div class="filtros-compactos-grid">
+                    <div class="filtro-compacto">
+                        <label>🎓 Curso</label>
+                        <select id="selectCurso">
+                            <option value="">Seleccione un curso</option>
+                            <option value="4toA">4toA</option>
+                            <option value="4toB">4toB</option>
+                            <option value="5toB">5toB</option>
+                            <option value="6toB">6toB</option>
+                        </select>
+                    </div>
+
+                    <div class="filtro-compacto">
+                        <label>📚 Módulo</label>
+                        <select id="selectModulo">
+                            <option value="">Seleccione un módulo</option>
+                        </select>
+                    </div>
+
+                    <div class="filtro-compacto">
+                        <label>📊 Actividades por RA</label>
+                        <select id="selectRA">
+                            <option value="">Seleccione un RA</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla de Calificaciones por RA -->
+            <div id="tablaRegistroContainer" class="tabla-container">
+                <div class="tabla-header-con-boton">
+                    <h2>Registro de Calificaciones - Módulos</h2>
+                    <button id="btnGuardarRegistro" class="btn-guardar">
+                        💾 Guardar
+                    </button>
+                </div>
+                <div class="tabla-scroll" id="tablaScrollRegistro">
+                    <!-- Botones de navegación flotantes -->
+                    <div class="scroll-nav-buttons scroll-nav-left">
+                        <button class="scroll-nav-btn" id="scrollLeftRegistro" aria-label="Desplazar a la izquierda">
+                            ◀
+                        </button>
+                    </div>
+                    <div class="scroll-nav-buttons scroll-nav-right">
+                        <button class="scroll-nav-btn" id="scrollRightRegistro" aria-label="Desplazar a la derecha">
+                            ▶
+                        </button>
+                    </div>
+                    
+                    <table id="tablaRegistro">
+                        <thead id="tablaRegistroHead">
+                            <!-- Se genera dinámicamente -->
+                        </thead>
+                        <tbody id="tablaRegistroBody">
+                            <!-- Se genera dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vista de Actividades por RA -->
+        <div id="vistaActividades" class="vista-actividades" style="display: none;">
+            <div class="ra-descripcion-box">
+                <div class="ra-descripcion-header">
+                    <h3>Descripción del RA</h3>
+                    <button id="btnVolverRegistro" class="btn-volver-nuevo">← Volver a Registro</button>
+                </div>
+                <textarea id="raDescripcion" rows="2" placeholder="Descripción del Resultado de Aprendizaje..." class="ra-descripcion-textarea"></textarea>
+                
+                <!-- Filtros compactos para acceso directo -->
+                <div class="filtros-actividades-compactos">
+                    <div class="filtro-compacto">
+                        <label>🎓 Curso</label>
+                        <select id="selectCursoActividades">
+                            <option value="">Seleccione curso</option>
+                            <option value="4toA">4toA</option>
+                            <option value="4toB">4toB</option>
+                            <option value="5toB">5toB</option>
+                            <option value="6toB">6toB</option>
+                        </select>
+                    </div>
+                    <div class="filtro-compacto">
+                        <label>📚 Módulo</label>
+                        <select id="selectModuloActividades">
+                            <option value="">Seleccione módulo</option>
+                        </select>
+                    </div>
+                    <div class="filtro-compacto">
+                        <label>📊 Actividades por RA</label>
+                        <select id="selectRAActividades">
+                            <option value="">Seleccione RA</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tabla-container">
+                <div class="tabla-header-con-boton">
+                    <h2 id="tituloActividades">Actividades del RA</h2>
+                    <button id="btnGuardarActividades" class="btn-guardar">
+                        💾 Guardar
+                    </button>
+                </div>
+                <div class="tabla-scroll" id="tablaScrollActividades">
+                    <!-- Botones de navegación flotantes -->
+                    <div class="scroll-nav-buttons scroll-nav-left">
+                        <button class="scroll-nav-btn" id="scrollLeftActividades" aria-label="Desplazar a la izquierda">
+                            ◀
+                        </button>
+                    </div>
+                    <div class="scroll-nav-buttons scroll-nav-right">
+                        <button class="scroll-nav-btn" id="scrollRightActividades" aria-label="Desplazar a la derecha">
+                            ▶
+                        </button>
+                    </div>
+                    
+                    <table id="tablaActividades">
+                        <thead id="tablaActividadesHead">
+                            <!-- Se genera dinámicamente -->
+                        </thead>
+                        <tbody id="tablaActividadesBody">
+                            <!-- Se genera dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vista de Asistencia -->
+        <div id="vistaAsistencia" class="vista-asistencia" style="display: none;">
+            <div class="tabla-header-con-boton">
+                <h2>📋 Registro de Asistencia</h2>
+                <div class="botones-asistencia">
+                    <button id="btnVolverDesdeAsistencia" class="btn-volver-asistencia">
+                        ← Volver
+                    </button>
+                    <button id="btnGuardarAsistencia" class="btn-guardar">
+                        💾 Guardar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filtros de asistencia compactos -->
+            <div class="filtros-asistencia-compactos">
+                <div class="filtro-compacto">
+                    <label>📚 Módulo</label>
+                    <select id="selectModuloAsistencia">
+                        <option value="">Seleccione un módulo</option>
+                    </select>
+                </div>
+
+                <div class="filtro-compacto">
+                    <label>🎓 Curso</label>
+                    <select id="selectCursoAsistencia">
+                        <option value="">Seleccione un curso</option>
+                        <option value="4toA">4toA</option>
+                        <option value="4toB">4toB</option>
+                        <option value="5toB">5toB</option>
+                        <option value="6toB">6toB</option>
+                    </select>
+                </div>
+
+                <div class="filtro-compacto">
+                    <label>📅 Mes</label>
+                    <input type="month" id="selectMesAsistencia" />
+                </div>
+            </div>
+
+            <div class="leyenda-asistencia">
+                <div class="leyenda-izquierda">
+                    <strong>Leyenda de estados:</strong>
+                    <div class="leyenda-items">
+                        <div class="leyenda-item">
+                            <div class="leyenda-cuadro estado-presente"></div>
+                            <span>P = Presente</span>
+                        </div>
+                        <div class="leyenda-item">
+                            <div class="leyenda-cuadro estado-excusa"></div>
+                            <span>E = Excusa</span>
+                        </div>
+                        <div class="leyenda-item">
+                            <div class="leyenda-cuadro estado-ausente"></div>
+                            <span>A = Ausente</span>
+                        </div>
+                        <div class="leyenda-item">
+                            <div class="leyenda-cuadro estado-feriado"></div>
+                            <span>F = Feriado</span>
+                        </div>
+                    </div>
+                    <div class="leyenda-nota">
+                        Nota: 3 excusas = 1 ausencia. Se requiere 70% de asistencia.
+                    </div>
+                </div>
+                
+                <div class="resumen-dias-trabajados">
+                    <span class="resumen-label-trabajados">Días trabajados:</span>
+                    <span class="resumen-numero-trabajados" id="diasTrabajados">0</span>
+                </div>
+            </div>
+
+            <div class="tabla-scroll-container">
+                <div class="scroll-nav-buttons scroll-nav-left">
+                    <button class="scroll-nav-btn" id="scrollLeftAsistencia">◀</button>
+                </div>
+                <div class="scroll-nav-buttons scroll-nav-right">
+                    <button class="scroll-nav-btn" id="scrollRightAsistencia">▶</button>
+                </div>
+
+                <div id="tablaScrollAsistencia" class="tabla-scroll">
+                    <table id="tablaAsistencia">
+                        <thead id="tablaAsistenciaHead"></thead>
+                        <tbody id="tablaAsistenciaBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            <div class="loading-card">
+                <div class="spinner"></div>
+                <p class="loading-texto">Cargando datos...</p>
+                <p class="loading-subtexto" id="loadingSubtexto">Conectando con Google Sheets</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
