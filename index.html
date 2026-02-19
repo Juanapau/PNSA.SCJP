@@ -299,9 +299,7 @@
         </div>
     </div>
 
-    <!-- ==========================================
-         MODAL DE CONFIGURACIÓN DE INSTRUMENTO
-         ========================================== -->
+    <!-- MODAL CONFIGURAR INSTRUMENTO -->
     <div id="modalConfigInstrumento" class="modal-instrumento" style="display: none;">
         <div class="modal-overlay-instrumento"></div>
         <div class="modal-contenido-instrumento">
@@ -311,7 +309,6 @@
             </div>
             
             <div class="modal-body-instrumento">
-                <!-- Información de la actividad -->
                 <div class="config-info-actividad">
                     <div class="config-info-item">
                         <strong>Módulo:</strong>
@@ -323,94 +320,87 @@
                     </div>
                     <div class="config-info-item">
                         <strong>Actividad:</strong>
-                        <span id="configActividadNombre">-</span>
+                        <span id="configActividadNum">-</span>
                     </div>
                 </div>
 
-                <!-- Valor de la actividad -->
                 <div class="config-valor-section">
                     <label class="config-label-principal">
                         <span class="config-label-icono">🎯</span>
-                        <span>Valor de la actividad (puntos):</span>
+                        <span>Valor de la Actividad</span>
                     </label>
-                    <input 
-                        type="number" 
-                        id="configValorActividad" 
-                        class="config-input-valor" 
-                        min="0" 
-                        max="100" 
-                        step="0.5"
-                        placeholder="Ej: 2, 3, 10"
-                        required
-                    />
-                    <small class="config-hint">Este será el máximo que puede obtener el estudiante</small>
+                    <input type="number" id="configValorActividad" class="config-input-valor" 
+                           placeholder="Ej: 2" min="0" step="0.1">
+                    <span class="config-hint">Puede ser cualquier valor (0.5, 1, 2, 3, 10, etc.)</span>
                 </div>
 
-                <!-- Selección de instrumento -->
-                <div class="config-instrumento-section">
+                <div class="config-instrumentos-section">
                     <label class="config-label-principal">
                         <span class="config-label-icono">📋</span>
-                        <span>Tipo de instrumento:</span>
+                        <span>Tipo de Instrumento</span>
                     </label>
                     
                     <div class="config-instrumentos-grid">
-                        <label class="config-instrumento-card">
-                            <input type="radio" name="tipoInstrumento" value="lista_cotejo" class="config-radio">
-                            <div class="config-card-content">
+                        <div class="config-instrumento-card">
+                            <input type="radio" name="tipoInstrumento" value="lista_cotejo" 
+                                   id="radioListaCotejo" class="config-radio">
+                            <label for="radioListaCotejo" class="config-card-content">
                                 <div class="config-card-icon lista-cotejo-icon">✓</div>
                                 <div class="config-card-titulo">Lista de Cotejo</div>
                                 <div class="config-card-descripcion">Evaluación Sí/No por criterio</div>
-                            </div>
-                        </label>
+                            </label>
+                        </div>
 
-                        <label class="config-instrumento-card">
-                            <input type="radio" name="tipoInstrumento" value="rubrica" class="config-radio">
-                            <div class="config-card-content">
+                        <div class="config-instrumento-card">
+                            <input type="radio" name="tipoInstrumento" value="rubrica" 
+                                   id="radioRubrica" class="config-radio">
+                            <label for="radioRubrica" class="config-card-content">
                                 <div class="config-card-icon rubrica-icon">⭐</div>
                                 <div class="config-card-titulo">Rúbrica</div>
                                 <div class="config-card-descripcion">Niveles de desempeño</div>
-                            </div>
-                        </label>
+                            </label>
+                        </div>
 
-                        <label class="config-instrumento-card">
-                            <input type="radio" name="tipoInstrumento" value="escala" class="config-radio">
-                            <div class="config-card-content">
+                        <div class="config-instrumento-card">
+                            <input type="radio" name="tipoInstrumento" value="escala" 
+                                   id="radioEscala" class="config-radio">
+                            <label for="radioEscala" class="config-card-content">
                                 <div class="config-card-icon escala-icon">📊</div>
-                                <div class="config-card-titulo">Escala de Valoración</div>
-                                <div class="config-card-descripcion">Evaluación numérica 1-5</div>
-                            </div>
-                        </label>
+                                <div class="config-card-titulo">Escala</div>
+                                <div class="config-card-descripcion">Valoración numérica 1-5</div>
+                            </label>
+                        </div>
 
-                        <label class="config-instrumento-card">
-                            <input type="radio" name="tipoInstrumento" value="sin_instrumento" class="config-radio">
-                            <div class="config-card-content">
+                        <div class="config-instrumento-card">
+                            <input type="radio" name="tipoInstrumento" value="sin_instrumento" 
+                                   id="radioSinInstrumento" class="config-radio" checked>
+                            <label for="radioSinInstrumento" class="config-card-content">
                                 <div class="config-card-icon sin-instrumento-icon">✏️</div>
                                 <div class="config-card-titulo">Sin Instrumento</div>
-                                <div class="config-card-descripcion">Calificación directa 0-10</div>
-                            </div>
-                        </label>
+                                <div class="config-card-descripcion">Calificación directa</div>
+                            </label>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Criterios de evaluación -->
-                <div id="configCriteriosSection" class="config-criterios-section" style="display: none;">
+                <div class="config-criterios-section" id="configCriteriosSection" style="display: none;">
                     <div class="config-criterios-header">
                         <label class="config-label-principal">
                             <span class="config-label-icono">📝</span>
-                            <span>Criterios de evaluación:</span>
+                            <span>Criterios de Evaluación</span>
                         </label>
-                        <button type="button" id="btnAgregarCriterio" class="btn-agregar-criterio">
+                        <button type="button" class="btn-agregar-criterio" id="btnAgregarCriterio">
                             + Agregar Criterio
                         </button>
                     </div>
 
-                    <div id="listaCriterios" class="config-criterios-lista">
-                        <!-- Los criterios se agregarán dinámicamente aquí -->
+                    <div class="config-criterios-lista" id="configCriteriosLista">
+                        <!-- Criterios se agregan dinámicamente -->
                     </div>
 
                     <div class="config-total-criterios">
-                        <span>Total puntos criterios:</span>
-                        <span id="totalPuntosCriterios" class="total-puntos-numero">0</span>
+                        <span>Total de puntos:</span>
+                        <span class="total-puntos-numero" id="totalPuntosCriterios">0</span>
                     </div>
                 </div>
             </div>
@@ -426,9 +416,7 @@
         </div>
     </div>
 
-    <!-- ==========================================
-         MODAL DE EVALUACIÓN CON INSTRUMENTO
-         ========================================== -->
+    <!-- MODAL EVALUAR CON INSTRUMENTO -->
     <div id="modalEvaluacion" class="modal-evaluacion" style="display: none;">
         <div class="modal-overlay-evaluacion"></div>
         <div class="modal-contenido-evaluacion">
@@ -438,7 +426,6 @@
             </div>
             
             <div class="modal-body-evaluacion">
-                <!-- Información del estudiante y actividad -->
                 <div class="eval-info-panel">
                     <div class="eval-info-estudiante">
                         <div class="eval-avatar">👤</div>
@@ -454,7 +441,6 @@
                     </div>
                 </div>
 
-                <!-- LISTA DE COTEJO -->
                 <div id="instrumentoListaCotejo" class="instrumento-contenedor" style="display: none;">
                     <div class="instrumento-header-tipo">
                         <div class="instrumento-icon-header lista-cotejo-icon">✓</div>
@@ -463,13 +449,9 @@
                             <div class="instrumento-descripcion-tipo">Marca los criterios cumplidos</div>
                         </div>
                     </div>
-
-                    <div id="listaCriteriosCotejo" class="eval-criterios-lista">
-                        <!-- Criterios se cargan dinámicamente -->
-                    </div>
+                    <div id="listaCriteriosCotejo" class="eval-criterios-lista"></div>
                 </div>
 
-                <!-- RÚBRICA -->
                 <div id="instrumentoRubrica" class="instrumento-contenedor" style="display: none;">
                     <div class="instrumento-header-tipo">
                         <div class="instrumento-icon-header rubrica-icon">⭐</div>
@@ -478,13 +460,9 @@
                             <div class="instrumento-descripcion-tipo">Selecciona el nivel de desempeño</div>
                         </div>
                     </div>
-
-                    <div id="listaCriteriosRubrica" class="eval-criterios-lista">
-                        <!-- Criterios se cargan dinámicamente -->
-                    </div>
+                    <div id="listaCriteriosRubrica" class="eval-criterios-lista"></div>
                 </div>
 
-                <!-- ESCALA DE VALORACIÓN -->
                 <div id="instrumentoEscala" class="instrumento-contenedor" style="display: none;">
                     <div class="instrumento-header-tipo">
                         <div class="instrumento-icon-header escala-icon">📊</div>
@@ -493,13 +471,9 @@
                             <div class="instrumento-descripcion-tipo">Califica de 1 a 5</div>
                         </div>
                     </div>
-
-                    <div id="listaCriteriosEscala" class="eval-criterios-lista">
-                        <!-- Criterios se cargan dinámicamente -->
-                    </div>
+                    <div id="listaCriteriosEscala" class="eval-criterios-lista"></div>
                 </div>
 
-                <!-- Panel de resultado -->
                 <div class="eval-resultado-panel">
                     <div class="eval-resultado-contenido">
                         <div class="eval-resultado-label">Calificación obtenida:</div>
