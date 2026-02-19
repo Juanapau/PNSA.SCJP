@@ -2538,24 +2538,37 @@ async function guardarConfigInstrumento() {
     modalConfigElementos.btnGuardar.textContent = '⏳ Guardando...';
     
     try {
-        // 1. Guardar instrumento y valor
-        const responseInstrumento = await fetch(CONFIG.GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'guardarInstrumentoActividad',
-                moduloId: modalConfigState.moduloId,
-                raId: modalConfigState.raId,
-                numActividad: modalConfigState.numActividad,
-                tipoInstrumento: tipo,
-                valorActividad: valorActividad
-            })
+        console.log('📤 Guardando instrumento:', {
+            moduloId: modalConfigState.moduloId,
+            raId: modalConfigState.raId,
+            numActividad: modalConfigState.numActividad,
+            tipo: tipo,
+            valor: valorActividad
         });
         
-        const dataInstrumento = await responseInstrumento.json();
+        // 1. Guardar instrumento y valor usando POST tradicional
+        const formData1 = new URLSearchParams();
+        formData1.append('action', 'guardarInstrumentoActividad');
         
-        if (!dataInstrumento.success) {
-            throw new Error('Error al guardar instrumento');
+        const dataInstrumento = {
+            action: 'guardarInstrumentoActividad',
+            moduloId: modalConfigState.moduloId,
+            raId: modalConfigState.raId,
+            numActividad: modalConfigState.numActividad,
+            tipoInstrumento: tipo,
+            valorActividad: valorActividad
+        };
+        
+        const responseInstrumento = await fetch(CONFIG.GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify(dataInstrumento)
+        });
+        
+        const resultInstrumento = await responseInstrumento.json();
+        console.log('📥 Respuesta instrumento:', resultInstrumento);
+        
+        if (!resultInstrumento.success) {
+            throw new Error(resultInstrumento.error || 'Error al guardar instrumento');
         }
         
         // 2. Si tiene criterios, guardarlos
@@ -2571,22 +2584,26 @@ async function guardarConfigInstrumento() {
                 });
             });
             
+            console.log('📤 Guardando criterios:', criterios);
+            
+            const dataCriterios = {
+                action: 'guardarCriteriosActividad',
+                moduloId: modalConfigState.moduloId,
+                raId: modalConfigState.raId,
+                numActividad: modalConfigState.numActividad,
+                criterios: criterios
+            };
+            
             const responseCriterios = await fetch(CONFIG.GOOGLE_SCRIPT_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'guardarCriteriosActividad',
-                    moduloId: modalConfigState.moduloId,
-                    raId: modalConfigState.raId,
-                    numActividad: modalConfigState.numActividad,
-                    criterios: criterios
-                })
+                body: JSON.stringify(dataCriterios)
             });
             
-            const dataCriterios = await responseCriterios.json();
+            const resultCriterios = await responseCriterios.json();
+            console.log('📥 Respuesta criterios:', resultCriterios);
             
-            if (!dataCriterios.success) {
-                throw new Error('Error al guardar criterios');
+            if (!resultCriterios.success) {
+                throw new Error(resultCriterios.error || 'Error al guardar criterios');
             }
         }
         
