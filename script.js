@@ -2594,9 +2594,11 @@ async function guardarConfigInstrumento() {
         }
         
         console.log('✅ Configuración guardada exitosamente');
-        alert('✅ Configuración guardada exitosamente');
         
         cerrarModalConfigInstrumento();
+        
+        // Mostrar mensaje elegante
+        mostrarMensajeExito('¡Configuración Guardada!', 'El instrumento ha sido configurado exitosamente');
         
         // Recargar instrumentos y regenerar tabla
         if (state.vistaActual === 'actividades') {
@@ -3016,7 +3018,9 @@ async function guardarEvaluacion() {
         }
         
         cerrarModalEvaluacion();
-        alert('✅ Evaluación guardada: ' + notaFinalRedondeada + ' pts');
+        
+        // Mostrar mensaje elegante
+        mostrarMensajeExito('¡Evaluación Guardada!', `Calificación registrada: ${notaFinalRedondeada} pts`);
         
     } catch (error) {
         console.error('Error al guardar evaluación:', error);
@@ -3112,3 +3116,41 @@ document.addEventListener('mousedown', function(e) {
         }
     }
 });
+
+// ==========================================
+// MENSAJE DE CONFIRMACIÓN ELEGANTE
+// ==========================================
+
+function mostrarMensajeExito(titulo, texto) {
+    // Crear overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'mensaje-confirmacion-overlay';
+    
+    // Crear mensaje
+    const mensaje = document.createElement('div');
+    mensaje.className = 'mensaje-confirmacion';
+    mensaje.innerHTML = `
+        <div class="mensaje-confirmacion-icono">✅</div>
+        <div class="mensaje-confirmacion-titulo">${titulo}</div>
+        <div class="mensaje-confirmacion-texto">${texto}</div>
+        <button class="mensaje-confirmacion-btn" onclick="cerrarMensajeExito(this)">Aceptar</button>
+    `;
+    
+    document.body.appendChild(overlay);
+    document.body.appendChild(mensaje);
+    
+    // Auto-cerrar después de 3 segundos
+    setTimeout(() => {
+        if (document.body.contains(mensaje)) {
+            cerrarMensajeExito(mensaje.querySelector('.mensaje-confirmacion-btn'));
+        }
+    }, 3000);
+}
+
+function cerrarMensajeExito(btn) {
+    const mensaje = btn.closest('.mensaje-confirmacion');
+    const overlay = document.querySelector('.mensaje-confirmacion-overlay');
+    
+    if (mensaje) mensaje.remove();
+    if (overlay) overlay.remove();
+}
