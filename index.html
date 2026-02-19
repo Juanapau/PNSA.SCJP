@@ -426,6 +426,107 @@
         </div>
     </div>
 
+    <!-- ==========================================
+         MODAL DE EVALUACIÓN CON INSTRUMENTO
+         ========================================== -->
+    <div id="modalEvaluacion" class="modal-evaluacion" style="display: none;">
+        <div class="modal-overlay-evaluacion"></div>
+        <div class="modal-contenido-evaluacion">
+            <div class="modal-header-evaluacion">
+                <h3 id="tituloEvaluacion">📋 Evaluar Actividad</h3>
+                <button class="modal-close-evaluacion" id="btnCerrarEvaluacion">✕</button>
+            </div>
+            
+            <div class="modal-body-evaluacion">
+                <!-- Información del estudiante y actividad -->
+                <div class="eval-info-panel">
+                    <div class="eval-info-estudiante">
+                        <div class="eval-avatar">👤</div>
+                        <div class="eval-estudiante-datos">
+                            <div class="eval-nombre" id="evalNombreEstudiante">-</div>
+                            <div class="eval-detalle" id="evalDetalleActividad">-</div>
+                        </div>
+                    </div>
+                    <div class="eval-valor-total">
+                        <span class="eval-label-valor">Valor:</span>
+                        <span class="eval-numero-valor" id="evalValorActividad">0</span>
+                        <span class="eval-label-pts">pts</span>
+                    </div>
+                </div>
+
+                <!-- LISTA DE COTEJO -->
+                <div id="instrumentoListaCotejo" class="instrumento-contenedor" style="display: none;">
+                    <div class="instrumento-header-tipo">
+                        <div class="instrumento-icon-header lista-cotejo-icon">✓</div>
+                        <div>
+                            <div class="instrumento-titulo-tipo">Lista de Cotejo</div>
+                            <div class="instrumento-descripcion-tipo">Marca los criterios cumplidos</div>
+                        </div>
+                    </div>
+
+                    <div id="listaCriteriosCotejo" class="eval-criterios-lista">
+                        <!-- Criterios se cargan dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- RÚBRICA -->
+                <div id="instrumentoRubrica" class="instrumento-contenedor" style="display: none;">
+                    <div class="instrumento-header-tipo">
+                        <div class="instrumento-icon-header rubrica-icon">⭐</div>
+                        <div>
+                            <div class="instrumento-titulo-tipo">Rúbrica</div>
+                            <div class="instrumento-descripcion-tipo">Selecciona el nivel de desempeño</div>
+                        </div>
+                    </div>
+
+                    <div id="listaCriteriosRubrica" class="eval-criterios-lista">
+                        <!-- Criterios se cargan dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- ESCALA DE VALORACIÓN -->
+                <div id="instrumentoEscala" class="instrumento-contenedor" style="display: none;">
+                    <div class="instrumento-header-tipo">
+                        <div class="instrumento-icon-header escala-icon">📊</div>
+                        <div>
+                            <div class="instrumento-titulo-tipo">Escala de Valoración</div>
+                            <div class="instrumento-descripcion-tipo">Califica de 1 a 5</div>
+                        </div>
+                    </div>
+
+                    <div id="listaCriteriosEscala" class="eval-criterios-lista">
+                        <!-- Criterios se cargan dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- Panel de resultado -->
+                <div class="eval-resultado-panel">
+                    <div class="eval-resultado-contenido">
+                        <div class="eval-resultado-label">Calificación obtenida:</div>
+                        <div class="eval-resultado-calculo">
+                            <span id="evalPuntosObtenidos">0</span>
+                            <span class="eval-separator">/</span>
+                            <span id="evalPuntosMaximos">0</span>
+                            <span class="eval-multiply">×</span>
+                            <span id="evalValorBase">0</span>
+                            <span class="eval-equals">=</span>
+                            <span class="eval-nota-final" id="evalNotaFinal">0.0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer-evaluacion">
+                <button type="button" class="btn-eval-secundario" id="btnCancelarEvaluacion">
+                    Cancelar
+                </button>
+                <button type="button" class="btn-eval-primario" id="btnGuardarEvaluacion">
+                    💾 Guardar Evaluación
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
