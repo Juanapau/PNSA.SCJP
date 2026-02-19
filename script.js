@@ -179,6 +179,8 @@ async function cargarActividadesRA(raId) {
         state.actividades.push(...cached);
         // Cargar descripciones con moduloId
         await cargarDescripcionesActividades(state.moduloSeleccionado, raId);
+        // Precargar instrumentos configurados
+        await cargarInstrumentosRA(state.moduloSeleccionado, raId);
         generarTablaActividades();
         return;
     }
@@ -192,6 +194,8 @@ async function cargarActividadesRA(raId) {
         state.actividades.push(...actividadesDelRA);
         // Cargar descripciones con moduloId
         await cargarDescripcionesActividades(state.moduloSeleccionado, raId);
+        // Precargar instrumentos configurados
+        await cargarInstrumentosRA(state.moduloSeleccionado, raId);
         generarTablaActividades();
     } catch (error) {
         console.error('Error al cargar actividades:', error);
@@ -480,19 +484,25 @@ function generarTablaActividades() {
         
         for (let i = 1; i <= CONFIG.NUM_ACTIVIDADES; i++) {
             const valor = obtenerValorActividad(estudiante.id, i);
-            bodyHTML += `<td class="celda-actividad-eval" 
+            const tieneInstrumento = tieneInstrumentoConfigurado(state.moduloSeleccionado, state.raSeleccionado, i);
+            const claseExtra = tieneInstrumento ? ' celda-con-instrumento' : '';
+            const iconoInstrumento = tieneInstrumento ? '<span class="icono-instrumento" title="Click para evaluar con instrumento">📋</span>' : '';
+            
+            bodyHTML += `<td class="celda-actividad-eval${claseExtra}" 
                             data-estudiante="${estudiante.id}" 
                             data-actividad="${i}" 
                             data-ra="${state.raSeleccionado}"
                             data-modulo="${state.moduloSeleccionado}">
+                            ${iconoInstrumento}
                             <input type="number" 
-                                   class="input-actividad" 
+                                   class="input-actividad${tieneInstrumento ? ' input-con-instrumento' : ''}" 
                                    data-estudiante="${estudiante.id}" 
                                    data-actividad="${i}" 
                                    data-ra="${state.raSeleccionado}" 
                                    value="${valor !== null && valor !== undefined ? valor : ''}" 
                                    min="0" 
-                                   max="10">
+                                   max="10"
+                                   ${tieneInstrumento ? 'readonly title="Click para evaluar con instrumento"' : ''}>
                          </td>`;
             totalActividades += valor || 0;
         }
@@ -2626,8 +2636,9 @@ async function guardarConfigInstrumento() {
         // Cerrar modal
         cerrarModalConfigInstrumento();
         
-        // Actualizar tabla de actividades si está visible
+        // Recargar instrumentos y regenerar tabla
         if (state.vistaActual === 'actividades') {
+            await cargarInstrumentosRA(modalConfigState.moduloId, modalConfigState.raId);
             generarTablaActividades();
         }
         
@@ -3083,20 +3094,53 @@ async function guardarEvaluacion() {
         }
         
         console.log('✅ Evaluación guardada exitosamente');
-        alert('✅ Evaluación guardada exitosamente');
         
-        // Invalidar caché de actividades para este RA
-        console.log('🗑️ Invalidando caché de actividades para RA:', modalEvalState.raId);
-        invalidarCache('actividades', modalEvalState.raId);
+        // OPTIMIZACIÓN: Actualizar directamente el state y la celda sin recargar
+        const notaFinalRedondeada = parseFloat(notaFinal.toFixed(2));
+        
+        // Actualizar en memoria
+        let actividadEnState = state.actividades.find(a => 
+            a.estudianteId == modalEvalState.estudianteId && 
+            a.numero == modalEvalState.numActividad && 
+            a.raId == modalEvalState.raId
+        );
+        
+        if (actividadEnState) {
+            actividadEnState.valor = notaFinalRedondeada;
+        } else {
+            state.actividades.push({
+                estudianteId: modalEvalState.estudianteId,
+                raId: modalEvalState.raId,
+                numero: modalEvalState.numActividad,
+                valor: notaFinalRedondeada
+            });
+        }
+        
+        // Actualizar directamente el input en la tabla
+        const input = document.querySelector(`input[data-estudiante="${modalEvalState.estudianteId}"][data-actividad="${modalEvalState.numActividad}"][data-ra="${modalEvalState.raId}"]`);
+        if (input) {
+            input.value = notaFinalRedondeada;
+            
+            // Actualizar el total de la fila
+            const fila = input.closest('tr');
+            if (fila) {
+                const inputs = fila.querySelectorAll('.input-actividad');
+                let total = 0;
+                inputs.forEach(inp => {
+                    const val = parseFloat(inp.value);
+                    if (!isNaN(val)) total += val;
+                });
+                const celdaTotal = fila.querySelector('.celda-total');
+                if (celdaTotal) {
+                    celdaTotal.textContent = total.toFixed(2);
+                }
+            }
+        }
         
         // Cerrar modal
         cerrarModalEvaluacion();
         
-        // Actualizar tabla de actividades
-        if (state.vistaActual === 'actividades') {
-            await cargarActividadesRA(modalEvalState.raId);
-            generarTablaActividades();
-        }
+        alert('✅ Evaluación guardada: ' + notaFinalRedondeada + ' pts');
         
     } catch (error) {
         console.error('Error al guardar evaluación:', error);
@@ -3118,7 +3162,7 @@ modalEvalElementos.btnGuardar.addEventListener('click', guardarEvaluacion);
 // ==========================================
 
 // Usar 'mousedown' en lugar de 'click' para capturar ANTES de que el input se active
-document.addEventListener('mousedown', async function(e) {
+document.addEventListener('mousedown', function(e) {
     // Si el click fue en un input de actividad
     if (e.target.classList.contains('input-actividad')) {
         const input = e.target;
@@ -3126,29 +3170,81 @@ document.addEventListener('mousedown', async function(e) {
         
         if (celda) {
             const estudianteId = celda.dataset.estudiante;
-            const numActividad = celda.dataset.actividad;
+            const numActividad = parseInt(celda.dataset.actividad);
             const raId = celda.dataset.ra;
             const moduloId = celda.dataset.modulo;
             
-            // Verificar si tiene instrumento configurado
-            try {
-                const url = `${CONFIG.GOOGLE_SCRIPT_URL}?action=getInstrumentoActividad&moduloId=${moduloId}&raId=${raId}&numActividad=${numActividad}`;
-                const response = await fetchConTimeout(url);
-                const data = await response.json();
-                
-                if (data.success && data.configurado && data.tipoInstrumento !== 'sin_instrumento') {
-                    // Tiene instrumento, prevenir que el input se active y abrir modal
-                    e.preventDefault();
-                    e.stopPropagation();
-                    input.blur(); // Quitar foco si lo tiene
-                    abrirModalEvaluacion(estudianteId, moduloId, raId, numActividad);
-                }
-                // Si no tiene instrumento o es sin_instrumento, dejar que el input funcione normal
-                
-            } catch (error) {
-                console.error('Error al verificar instrumento:', error);
-                // En caso de error, dejar funcionar el input normal
+            // Verificar si tiene instrumento configurado (DESDE CACHÉ - INSTANTÁNEO)
+            const instrumento = tieneInstrumentoConfigurado(moduloId, raId, numActividad);
+            
+            if (instrumento) {
+                // Tiene instrumento, prevenir que el input se active y abrir modal
+                e.preventDefault();
+                e.stopPropagation();
+                input.blur(); // Quitar foco si lo tiene
+                abrirModalEvaluacion(estudianteId, moduloId, raId, numActividad);
             }
+            // Si no tiene instrumento, dejar que el input funcione normal
         }
     }
 });
+
+// ==========================================
+// OPTIMIZACIÓN: CACHÉ DE INSTRUMENTOS
+// ==========================================
+
+const instrumentosCache = {
+    configuraciones: {}, // { "moduloId_raId_numActividad": { tipoInstrumento, valorActividad } }
+    criterios: {}        // { "moduloId_raId_numActividad": [...criterios] }
+};
+
+// Cargar instrumentos configurados para el RA actual
+async function cargarInstrumentosRA(moduloId, raId) {
+    console.log('📋 Precargando instrumentos configurados...');
+    
+    try {
+        // Cargar instrumentos para todas las actividades de este RA
+        const promesas = [];
+        
+        for (let i = 1; i <= CONFIG.NUM_ACTIVIDADES; i++) {
+            const clave = `${moduloId}_${raId}_${i}`;
+            
+            const promesa = (async () => {
+                try {
+                    const url = `${CONFIG.GOOGLE_SCRIPT_URL}?action=getInstrumentoActividad&moduloId=${moduloId}&raId=${raId}&numActividad=${i}`;
+                    const response = await fetchConTimeout(url);
+                    const data = await response.json();
+                    
+                    if (data.success && data.configurado && data.tipoInstrumento !== 'sin_instrumento') {
+                        instrumentosCache.configuraciones[clave] = {
+                            tipoInstrumento: data.tipoInstrumento,
+                            valorActividad: data.valorActividad
+                        };
+                    }
+                } catch (error) {
+                    console.error(`Error al cargar instrumento Ac.${i}:`, error);
+                }
+            })();
+            
+            promesas.push(promesa);
+        }
+        
+        await Promise.all(promesas);
+        console.log('✅ Instrumentos precargados:', Object.keys(instrumentosCache.configuraciones).length);
+        
+    } catch (error) {
+        console.error('Error al precargar instrumentos:', error);
+    }
+}
+
+// Verificar si una actividad tiene instrumento (desde caché)
+function tieneInstrumentoConfigurado(moduloId, raId, numActividad) {
+    const clave = `${moduloId}_${raId}_${numActividad}`;
+    return instrumentosCache.configuraciones[clave] || null;
+}
+
+// Limpiar caché de instrumentos
+function limpiarCacheInstrumentos() {
+    instrumentosCache.configuraciones = {};
+    instrumentosCache.criterios = {};
+}
