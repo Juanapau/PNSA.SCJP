@@ -2944,35 +2944,58 @@ async function abrirModalEvaluacion(estudianteId, moduloId, raId, numActividad) 
     modalEvalElementos.nombreEstudiante.textContent = estudiante ? estudiante.nombre : '-';
     modalEvalElementos.detalleActividad.textContent = `${modulo ? modulo.nombre : '-'} • ${ra ? ra.nombre : '-'} • Ac.${numActividad}`;
     
-    try {
-        const urlInstrumento = `${CONFIG.GOOGLE_SCRIPT_URL}?action=getInstrumentoActividad&moduloId=${moduloId}&raId=${raId}&numActividad=${numActividad}`;
-        const respInstrumento = await fetchConTimeout(urlInstrumento);
-        const dataInstrumento = await respInstrumento.json();
+    // INTENTAR OBTENER DEL CACHÉ PRIMERO ⚡
+    const clave = `${moduloId}_${raId}_${numActividad}`;
+    const instrumentoCache = instrumentosCache.configuraciones[clave];
+    
+    if (instrumentoCache) {
+        console.log('⚡ Usando instrumento desde caché');
+        modalEvalState.tipoInstrumento = instrumentoCache.tipoInstrumento;
+        modalEvalState.valorActividad = instrumentoCache.valorActividad;
         
-        if (!dataInstrumento.success || !dataInstrumento.configurado) {
-            alert('⚠️ Esta actividad no tiene instrumento configurado');
-            return;
-        }
-        
-        modalEvalState.tipoInstrumento = dataInstrumento.tipoInstrumento;
-        modalEvalState.valorActividad = dataInstrumento.valorActividad;
-        
-        modalEvalElementos.valorActividad.textContent = dataInstrumento.valorActividad;
-        modalEvalElementos.valorBase.textContent = dataInstrumento.valorActividad;
+        modalEvalElementos.valorActividad.textContent = instrumentoCache.valorActividad;
+        modalEvalElementos.valorBase.textContent = instrumentoCache.valorActividad;
         
         const titulos = {
             'lista_cotejo': '✓ Lista de Cotejo',
             'rubrica': '⭐ Rúbrica',
             'escala': '📊 Escala de Valoración'
         };
-        modalEvalElementos.titulo.textContent = titulos[dataInstrumento.tipoInstrumento] || 'Evaluar Actividad';
+        modalEvalElementos.titulo.textContent = titulos[instrumentoCache.tipoInstrumento] || 'Evaluar Actividad';
         
-        const urlCriterios = `${CONFIG.GOOGLE_SCRIPT_URL}?action=getCriteriosActividad&moduloId=${moduloId}&raId=${raId}&numActividad=${numActividad}`;
-        const respCriterios = await fetchConTimeout(urlCriterios);
-        const dataCriterios = await respCriterios.json();
+        // ABRIR MODAL INMEDIATAMENTE ⚡⚡⚡
+        ocultarTodosInstrumentos();
+        modalEvalElementos.modal.style.display = 'flex';
+        
+        // Mostrar mensaje de carga
+        const loadingHTML = '<div style="text-align: center; padding: 40px;"><div style="font-size: 2rem;">⏳</div><div>Cargando criterios...</div></div>';
+        modalEvalElementos.listaCotejo.innerHTML = loadingHTML;
+        modalEvalElementos.listaRubrica.innerHTML = loadingHTML;
+        modalEvalElementos.listaEscala.innerHTML = loadingHTML;
+        
+        switch (modalEvalState.tipoInstrumento) {
+            case 'lista_cotejo':
+                modalEvalElementos.instrumentoCotejo.style.display = 'block';
+                break;
+            case 'rubrica':
+                modalEvalElementos.instrumentoRubrica.style.display = 'block';
+                break;
+            case 'escala':
+                modalEvalElementos.instrumentoEscala.style.display = 'block';
+                break;
+        }
+    }
+    
+    try {
+        // Cargar criterios y evaluaciones EN PARALELO ⚡
+        const [dataCriterios, dataEvaluacion] = await Promise.all([
+            fetchConTimeout(`${CONFIG.GOOGLE_SCRIPT_URL}?action=getCriteriosActividad&moduloId=${moduloId}&raId=${raId}&numActividad=${numActividad}`).then(r => r.json()),
+            fetchConTimeout(`${CONFIG.GOOGLE_SCRIPT_URL}?action=getEvaluacionDetallada&estudianteId=${estudianteId}&moduloId=${moduloId}&raId=${raId}&numActividad=${numActividad}`).then(r => r.json())
+        ]);
         
         if (!dataCriterios.success || dataCriterios.criterios.length === 0) {
             alert('⚠️ Esta actividad no tiene criterios configurados');
+            modalEvalElementos.modal.style.display = 'none';
             return;
         }
         
@@ -2981,18 +3004,39 @@ async function abrirModalEvaluacion(estudianteId, moduloId, raId, numActividad) 
         const totalPuntos = dataCriterios.criterios.reduce((sum, c) => sum + c.puntajeMax, 0);
         modalEvalElementos.puntosMaximos.textContent = totalPuntos.toFixed(1);
         
-        const urlEvaluacion = `${CONFIG.GOOGLE_SCRIPT_URL}?action=getEvaluacionDetallada&estudianteId=${estudianteId}&moduloId=${moduloId}&raId=${raId}&numActividad=${numActividad}`;
-        const respEvaluacion = await fetchConTimeout(urlEvaluacion);
-        const dataEvaluacion = await respEvaluacion.json();
-        
         if (dataEvaluacion.success && dataEvaluacion.evaluaciones.length > 0) {
             dataEvaluacion.evaluaciones.forEach(ev => {
                 modalEvalState.evaluaciones[ev.orden] = ev.calificacion;
             });
         }
         
-        ocultarTodosInstrumentos();
+        // Si no se abrió desde caché, abrir ahora
+        if (!instrumentoCache) {
+            // Cargar info del instrumento si no estaba en caché
+            const dataInstrumento = await fetchConTimeout(`${CONFIG.GOOGLE_SCRIPT_URL}?action=getInstrumentoActividad&moduloId=${moduloId}&raId=${raId}&numActividad=${numActividad}`).then(r => r.json());
+            
+            if (!dataInstrumento.success || !dataInstrumento.configurado) {
+                alert('⚠️ Esta actividad no tiene instrumento configurado');
+                return;
+            }
+            
+            modalEvalState.tipoInstrumento = dataInstrumento.tipoInstrumento;
+            modalEvalState.valorActividad = dataInstrumento.valorActividad;
+            
+            modalEvalElementos.valorActividad.textContent = dataInstrumento.valorActividad;
+            modalEvalElementos.valorBase.textContent = dataInstrumento.valorActividad;
+            
+            const titulos = {
+                'lista_cotejo': '✓ Lista de Cotejo',
+                'rubrica': '⭐ Rúbrica',
+                'escala': '📊 Escala de Valoración'
+            };
+            modalEvalElementos.titulo.textContent = titulos[dataInstrumento.tipoInstrumento] || 'Evaluar Actividad';
+            
+            ocultarTodosInstrumentos();
+        }
         
+        // Generar el instrumento correspondiente
         switch (modalEvalState.tipoInstrumento) {
             case 'lista_cotejo':
                 generarListaCotejo();
@@ -3009,11 +3053,18 @@ async function abrirModalEvaluacion(estudianteId, moduloId, raId, numActividad) 
         }
         
         calcularNotaFinal();
-        modalEvalElementos.modal.style.display = 'flex';
+        
+        // Si no se abrió desde caché, abrir ahora
+        if (!instrumentoCache) {
+            modalEvalElementos.modal.style.display = 'flex';
+        }
+        
+        console.log('✅ Modal de evaluación cargado completamente');
         
     } catch (error) {
         console.error('Error al abrir modal de evaluación:', error);
         alert('❌ Error al cargar la evaluación');
+        modalEvalElementos.modal.style.display = 'none';
     }
 }
 
