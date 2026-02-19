@@ -3064,9 +3064,11 @@ async function guardarEvaluacion() {
             action: 'guardarActividad',
             estudianteId: modalEvalState.estudianteId,
             raId: modalEvalState.raId,
-            numeroActividad: modalEvalState.numActividad,
-            calificacion: parseFloat(notaFinal.toFixed(2))
+            actividadNumero: modalEvalState.numActividad,
+            valor: parseFloat(notaFinal.toFixed(2))
         };
+        
+        console.log('📤 Guardando en Actividades:', dataActividad);
         
         const respActividad = await fetch(CONFIG.GOOGLE_SCRIPT_URL, {
             method: 'POST',
@@ -3074,6 +3076,7 @@ async function guardarEvaluacion() {
         });
         
         const resultActividad = await respActividad.json();
+        console.log('📥 Respuesta de Actividades:', resultActividad);
         
         if (!resultActividad.success) {
             throw new Error('Error al guardar calificación en Actividades');
