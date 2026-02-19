@@ -3752,3 +3752,543 @@ body.dark-mode .modal-footer-instrumento {
 .config-icon:hover {
     transform: scale(1.2);
 }
+
+/* ==========================================
+   MODAL DE EVALUACIÓN
+   ========================================== */
+
+.modal-evaluacion {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: modalFadeIn 0.3s ease;
+}
+
+.modal-overlay-evaluacion {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+}
+
+.modal-contenido-evaluacion {
+    position: relative;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.4);
+    width: 90%;
+    max-width: 700px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    animation: modalSlideIn 0.3s ease;
+}
+
+.modal-header-evaluacion {
+    padding: 24px 30px;
+    border-bottom: 2px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 20px 20px 0 0;
+}
+
+.modal-header-evaluacion h3 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.modal-close-evaluacion {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: white;
+}
+
+.modal-close-evaluacion:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+.modal-body-evaluacion {
+    padding: 25px 30px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.eval-info-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    margin-bottom: 25px;
+    border: 2px solid #dee2e6;
+}
+
+.eval-info-estudiante {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.eval-avatar {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.eval-nombre {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #333;
+}
+
+.eval-detalle {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 4px;
+}
+
+.eval-valor-total {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 12px 20px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.eval-label-valor {
+    font-size: 0.9rem;
+    color: #666;
+    font-weight: 600;
+}
+
+.eval-numero-valor {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #667eea;
+}
+
+.eval-label-pts {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.instrumento-header-tipo {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 20px;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    border-radius: 12px;
+    margin-bottom: 20px;
+    border-left: 4px solid #667eea;
+}
+
+.instrumento-icon-header {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.instrumento-titulo-tipo {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #333;
+}
+
+.instrumento-descripcion-tipo {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 2px;
+}
+
+.eval-criterios-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.eval-criterio-item {
+    padding: 18px 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border-left: 4px solid;
+    transition: all 0.2s ease;
+}
+
+.eval-criterio-item:hover {
+    background: #e9ecef;
+    transform: translateX(3px);
+}
+
+.eval-criterio-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.eval-criterio-nombre {
+    font-weight: 600;
+    color: #333;
+    font-size: 1rem;
+    flex: 1;
+}
+
+.eval-criterio-puntaje {
+    background: white;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #667eea;
+    border: 2px solid #667eea;
+}
+
+.eval-criterio-item.lista-cotejo {
+    border-left-color: #4CAF50;
+}
+
+.eval-checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.eval-checkbox {
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    accent-color: #4CAF50;
+}
+
+.eval-checkbox-label {
+    color: #666;
+    font-size: 0.95rem;
+}
+
+.eval-checkbox:checked ~ .eval-checkbox-label {
+    color: #2E7D32;
+    font-weight: 600;
+}
+
+.eval-criterio-item.rubrica {
+    border-left-color: #2196F3;
+}
+
+.eval-niveles-rubrica {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.eval-nivel-btn {
+    padding: 12px 8px;
+    border: 2px solid #e0e0e0;
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.eval-nivel-btn:hover {
+    border-color: #2196F3;
+    background: #E3F2FD;
+    transform: translateY(-2px);
+}
+
+.eval-nivel-btn.selected {
+    border-color: #2196F3;
+    color: white;
+    transform: scale(1.05);
+}
+
+.eval-nivel-btn.nivel-excelente.selected {
+    background: #4CAF50;
+    border-color: #4CAF50;
+}
+
+.eval-nivel-btn.nivel-bueno.selected {
+    background: #2196F3;
+    border-color: #2196F3;
+}
+
+.eval-nivel-btn.nivel-regular.selected {
+    background: #FF9800;
+    border-color: #FF9800;
+}
+
+.eval-nivel-btn.nivel-deficiente.selected {
+    background: #F44336;
+    border-color: #F44336;
+}
+
+.eval-nivel-nombre {
+    display: block;
+    font-size: 0.85rem;
+}
+
+.eval-nivel-puntos {
+    display: block;
+    font-size: 0.75rem;
+    opacity: 0.8;
+    margin-top: 4px;
+}
+
+.eval-criterio-item.escala {
+    border-left-color: #FF9800;
+}
+
+.eval-escala-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.eval-escala-numeros {
+    display: flex;
+    gap: 10px;
+    flex: 1;
+}
+
+.eval-escala-btn {
+    width: 50px;
+    height: 50px;
+    border: 2px solid #e0e0e0;
+    background: white;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: #666;
+}
+
+.eval-escala-btn:hover {
+    border-color: #FF9800;
+    background: #FFF3E0;
+    transform: scale(1.1);
+}
+
+.eval-escala-btn.selected {
+    border-color: #FF9800;
+    background: #FF9800;
+    color: white;
+    transform: scale(1.15);
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
+}
+
+.eval-escala-valor {
+    min-width: 60px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #FF9800;
+}
+
+.eval-resultado-panel {
+    margin-top: 25px;
+    padding: 20px 25px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    color: white;
+}
+
+.eval-resultado-label {
+    font-size: 0.95rem;
+    opacity: 0.9;
+    margin-bottom: 12px;
+    font-weight: 500;
+}
+
+.eval-resultado-calculo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.3rem;
+    font-weight: 700;
+    flex-wrap: wrap;
+}
+
+.eval-separator,
+.eval-multiply,
+.eval-equals {
+    opacity: 0.8;
+    font-size: 1.1rem;
+}
+
+.eval-nota-final {
+    font-size: 2rem;
+    padding: 8px 20px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    margin-left: 10px;
+}
+
+.modal-footer-evaluacion {
+    padding: 20px 30px;
+    border-top: 2px solid #e0e0e0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+}
+
+.btn-eval-secundario,
+.btn-eval-primario {
+    padding: 12px 28px;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-eval-secundario {
+    background: #f5f5f5;
+    color: #666;
+}
+
+.btn-eval-secundario:hover {
+    background: #e0e0e0;
+}
+
+.btn-eval-primario {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-eval-primario:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+body.dark-mode .modal-contenido-evaluacion {
+    background: #2D2D2D;
+}
+
+body.dark-mode .modal-header-evaluacion {
+    border-bottom-color: #444;
+}
+
+body.dark-mode .eval-info-panel {
+    background: linear-gradient(135deg, #363636 0%, #2D2D2D 100%);
+    border-color: #444;
+}
+
+body.dark-mode .eval-nombre {
+    color: #E0E0E0;
+}
+
+body.dark-mode .eval-detalle {
+    color: #9AA0A6;
+}
+
+body.dark-mode .eval-valor-total {
+    background: #363636;
+}
+
+body.dark-mode .instrumento-header-tipo {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
+}
+
+body.dark-mode .instrumento-titulo-tipo {
+    color: #E0E0E0;
+}
+
+body.dark-mode .eval-criterio-item {
+    background: #363636;
+}
+
+body.dark-mode .eval-criterio-nombre {
+    color: #E0E0E0;
+}
+
+body.dark-mode .eval-criterio-puntaje {
+    background: #2D2D2D;
+}
+
+body.dark-mode .eval-escala-btn,
+body.dark-mode .eval-nivel-btn {
+    background: #2D2D2D;
+    border-color: #555;
+    color: #E0E0E0;
+}
+
+body.dark-mode .modal-footer-evaluacion {
+    border-top-color: #444;
+}
+
+@media (max-width: 768px) {
+    .modal-contenido-evaluacion {
+        width: 95%;
+        max-height: 95vh;
+    }
+
+    .eval-info-panel {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .eval-niveles-rubrica {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .eval-escala-numeros {
+        flex-wrap: wrap;
+    }
+
+    .eval-resultado-calculo {
+        font-size: 1rem;
+    }
+
+    .eval-nota-final {
+        font-size: 1.5rem;
+    }
+}
+
+/* Celda de actividad con instrumento */
+.celda-actividad-eval {
+    position: relative;
+    cursor: pointer;
+}
+
+.celda-actividad-eval:hover {
+    background: rgba(102, 126, 234, 0.05);
+}
