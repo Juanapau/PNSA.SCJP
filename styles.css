@@ -3288,10 +3288,8 @@ body.dark-mode .tooltip-bubble::after {
 }
 
 .input-con-instrumento {
-    background: transparent !important;
     cursor: pointer !important;
     text-align: center;
-    font-weight: 600;
 }
 
 .input-con-instrumento:focus {
