@@ -3110,32 +3110,39 @@ modalEvalElementos.btnGuardar.addEventListener('click', guardarEvaluacion);
 // DETECTAR CLICK EN CELDAS PARA EVALUACIÓN
 // ==========================================
 
-document.addEventListener('click', async function(e) {
-    // Si el click fue en una celda de actividad (pero NO en el input)
-    const celda = e.target.closest('.celda-actividad-eval');
-    
-    if (celda && !e.target.classList.contains('input-actividad')) {
-        const estudianteId = celda.dataset.estudiante;
-        const numActividad = celda.dataset.actividad;
-        const raId = celda.dataset.ra;
-        const moduloId = celda.dataset.modulo;
+// Usar 'mousedown' en lugar de 'click' para capturar ANTES de que el input se active
+document.addEventListener('mousedown', async function(e) {
+    // Si el click fue en un input de actividad
+    if (e.target.classList.contains('input-actividad')) {
+        const input = e.target;
+        const celda = input.closest('.celda-actividad-eval');
         
-        // Verificar si tiene instrumento configurado
-        try {
-            const url = `${CONFIG.GOOGLE_SCRIPT_URL}?action=getInstrumentoActividad&moduloId=${moduloId}&raId=${raId}&numActividad=${numActividad}`;
-            const response = await fetchConTimeout(url);
-            const data = await response.json();
+        if (celda) {
+            const estudianteId = celda.dataset.estudiante;
+            const numActividad = celda.dataset.actividad;
+            const raId = celda.dataset.ra;
+            const moduloId = celda.dataset.modulo;
             
-            if (data.success && data.configurado && data.tipoInstrumento !== 'sin_instrumento') {
-                // Tiene instrumento, abrir modal de evaluación
-                e.preventDefault();
-                abrirModalEvaluacion(estudianteId, moduloId, raId, numActividad);
+            // Verificar si tiene instrumento configurado
+            try {
+                const url = `${CONFIG.GOOGLE_SCRIPT_URL}?action=getInstrumentoActividad&moduloId=${moduloId}&raId=${raId}&numActividad=${numActividad}`;
+                const response = await fetchConTimeout(url);
+                const data = await response.json();
+                
+                if (data.success && data.configurado && data.tipoInstrumento !== 'sin_instrumento') {
+                    // Tiene instrumento, prevenir que el input se active y abrir modal
+                    e.preventDefault();
+                    e.stopPropagation();
+                    input.blur(); // Quitar foco si lo tiene
+                    abrirModalEvaluacion(estudianteId, moduloId, raId, numActividad);
+                }
+                // Si no tiene instrumento o es sin_instrumento, dejar que el input funcione normal
+                
+            } catch (error) {
+                console.error('Error al verificar instrumento:', error);
+                // En caso de error, dejar funcionar el input normal
             }
-            // Si no tiene instrumento o es sin_instrumento, dejar que el input funcione normal
-            
-        } catch (error) {
-            console.error('Error al verificar instrumento:', error);
-            // En caso de error, dejar funcionar el input normal
         }
     }
+});
 });
