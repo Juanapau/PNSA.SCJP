@@ -5,6 +5,164 @@ const CONFIG = {
     PORCENTAJE_APROBATORIO: 70
 };
 
+// ==========================================
+// SISTEMA DE CACHÉ PERSISTENTE CON LOCALSTORAGE
+// ==========================================
+
+const CachePersistente = {
+    DURACION: 30 * 60 * 1000, // 30 minutos
+    
+    guardar(clave, datos) {
+        try {
+            const item = {
+                datos: datos,
+                timestamp: Date.now()
+            };
+            localStorage.setItem(`pnsa_cache_${clave}`, JSON.stringify(item));
+            console.log(`💾 Cache guardado: ${clave}`);
+        } catch (error) {
+            console.warn('Error al guardar en localStorage:', error);
+        }
+    },
+    
+    obtener(clave) {
+        try {
+            const item = localStorage.getItem(`pnsa_cache_${clave}`);
+            if (!item) return null;
+            
+            const parsed = JSON.parse(item);
+            const ahora = Date.now();
+            
+            if (ahora - parsed.timestamp > this.DURACION) {
+                console.log(`⏰ Cache expirado: ${clave}`);
+                localStorage.removeItem(`pnsa_cache_${clave}`);
+                return null;
+            }
+            
+            console.log(`⚡ Cache recuperado: ${clave}`);
+            return parsed.datos;
+        } catch (error) {
+            console.warn('Error al leer localStorage:', error);
+            return null;
+        }
+    },
+    
+    invalidar(clave) {
+        localStorage.removeItem(`pnsa_cache_${clave}`);
+        console.log(`🗑️ Cache invalidado: ${clave}`);
+    },
+    
+    limpiarTodo() {
+        const keys = Object.keys(localStorage);
+        keys.forEach(key => {
+            if (key.startsWith('pnsa_cache_')) {
+                localStorage.removeItem(key);
+            }
+        });
+        console.log('🧹 Todo el cache limpiado');
+    }
+};
+
+// ==========================================
+// COLA DE PETICIONES OPTIMIZADA
+// ==========================================
+
+const ColaPeticiones = {
+    cola: [],
+    enProceso: 0,
+    MAX_SIMULTANEAS: 6,
+    
+    async agregar(promesaFn) {
+        if (this.enProceso < this.MAX_SIMULTANEAS) {
+            return await this.ejecutar(promesaFn);
+        }
+        
+        return new Promise((resolve, reject) => {
+            this.cola.push({ promesaFn, resolve, reject });
+        });
+    },
+    
+    async ejecutar(promesaFn) {
+        this.enProceso++;
+        try {
+            const resultado = await promesaFn();
+            this.procesarSiguiente();
+            return resultado;
+        } catch (error) {
+            this.procesarSiguiente();
+            throw error;
+        }
+    },
+    
+    procesarSiguiente() {
+        this.enProceso--;
+        if (this.cola.length > 0 && this.enProceso < this.MAX_SIMULTANEAS) {
+            const { promesaFn, resolve, reject } = this.cola.shift();
+            this.ejecutar(promesaFn).then(resolve).catch(reject);
+        }
+    }
+};
+
+// ==========================================
+// PRECARGA INTELIGENTE DE DATOS
+// ==========================================
+
+const Precargador = {
+    async precargarCurso(curso) {
+        if (!curso) return;
+        console.log(`🔮 Precargando datos del curso ${curso}...`);
+        
+        if (!CachePersistente.obtener(`estudiantes_${curso}`)) {
+            ColaPeticiones.agregar(async () => {
+                try {
+                    const response = await fetchConTimeout(`${CONFIG.GOOGLE_SCRIPT_URL}?action=getEstudiantes&curso=${curso}`);
+                    const data = await response.json();
+                    CachePersistente.guardar(`estudiantes_${curso}`, data.estudiantes);
+                    console.log(`✅ Estudiantes de ${curso} precargados`);
+                } catch (error) {
+                    console.error('Error precargando estudiantes:', error);
+                }
+            });
+        }
+    },
+    
+    async precargarModulo(moduloId) {
+        if (!moduloId) return;
+        console.log(`🔮 Precargando RAs del módulo ${moduloId}...`);
+        
+        if (!CachePersistente.obtener(`ras_${moduloId}`)) {
+            ColaPeticiones.agregar(async () => {
+                try {
+                    const response = await fetchConTimeout(`${CONFIG.GOOGLE_SCRIPT_URL}?action=getRAs&moduloId=${moduloId}`);
+                    const data = await response.json();
+                    CachePersistente.guardar(`ras_${moduloId}`, data.ras);
+                    console.log(`✅ RAs del módulo ${moduloId} precargados`);
+                } catch (error) {
+                    console.error('Error precargando RAs:', error);
+                }
+            });
+        }
+    },
+    
+    async precargarRA(raId) {
+        if (!raId) return;
+        console.log(`🔮 Precargando actividades del RA ${raId}...`);
+        
+        if (!CachePersistente.obtener(`actividades_${raId}`)) {
+            ColaPeticiones.agregar(async () => {
+                try {
+                    const response = await fetchConTimeout(`${CONFIG.GOOGLE_SCRIPT_URL}?action=getActividades&raId=${raId}`);
+                    const data = await response.json();
+                    CachePersistente.guardar(`actividades_${raId}`, data.actividades);
+                    console.log(`✅ Actividades del RA ${raId} precargadas`);
+                } catch (error) {
+                    console.error('Error precargando actividades:', error);
+                }
+            });
+        }
+    }
+};
+
 // Estado global de la aplicación
 const state = {
     modulos: [],
@@ -83,18 +241,35 @@ async function cargarDatosIniciales() {
 }
 
 async function cargarModulos() {
+    // Intentar caché persistente primero
+    const cachePersistente = CachePersistente.obtener('modulos');
+    if (cachePersistente) {
+        state.modulos = cachePersistente;
+        poblarSelectModulos();
+        console.log('⚡ Módulos cargados desde localStorage');
+        return;
+    }
+    
+    // Luego caché en memoria
     const cached = obtenerDeCache('modulos');
     if (cached) {
         state.modulos = cached;
         poblarSelectModulos();
         return;
     }
+    
     mostrarCargando(true, 'Cargando módulos...');
     try {
-        const response = await fetchConTimeout(`${CONFIG.GOOGLE_SCRIPT_URL}?action=getModulos`);
+        const response = await ColaPeticiones.agregar(() => 
+            fetchConTimeout(`${CONFIG.GOOGLE_SCRIPT_URL}?action=getModulos`)
+        );
         const data = await response.json();
         state.modulos = data.modulos || [];
+        
+        // Guardar en ambos cachés
         guardarEnCache('modulos', state.modulos);
+        CachePersistente.guardar('modulos', state.modulos);
+        
         poblarSelectModulos();
     } catch (error) {
         console.error('❌ ERROR al cargar módulos:', error);
@@ -106,17 +281,32 @@ async function cargarModulos() {
 }
 
 async function cargarEstudiantes(curso) {
+    // Caché persistente primero
+    const cachePersist = CachePersistente.obtener(`estudiantes_${curso}`);
+    if (cachePersist) {
+        state.estudiantes = cachePersist;
+        console.log(`⚡ Estudiantes de ${curso} desde localStorage`);
+        return;
+    }
+    
+    // Caché en memoria
     const cached = obtenerDeCache('estudiantes', curso);
     if (cached) {
         state.estudiantes = cached;
         return;
     }
+    
     mostrarCargando(true, `Cargando estudiantes de ${curso}...`);
     try {
-        const response = await fetchConTimeout(`${CONFIG.GOOGLE_SCRIPT_URL}?action=getEstudiantes&curso=${curso}`);
+        const response = await ColaPeticiones.agregar(() =>
+            fetchConTimeout(`${CONFIG.GOOGLE_SCRIPT_URL}?action=getEstudiantes&curso=${curso}`)
+        );
         const data = await response.json();
         state.estudiantes = data.estudiantes || [];
+        
+        // Guardar en ambos cachés
         guardarEnCache('estudiantes', state.estudiantes, curso);
+        CachePersistente.guardar(`estudiantes_${curso}`, state.estudiantes);
     } catch (error) {
         console.error(`❌ ERROR al cargar estudiantes de ${curso}:`, error);
         state.estudiantes = [];
@@ -126,18 +316,35 @@ async function cargarEstudiantes(curso) {
 }
 
 async function cargarRAsDelModulo(moduloId) {
+    // Caché persistente
+    const cachePersist = CachePersistente.obtener(`ras_${moduloId}`);
+    if (cachePersist) {
+        state.ras = cachePersist;
+        poblarSelectRAs();
+        console.log(`⚡ RAs del módulo ${moduloId} desde localStorage`);
+        return;
+    }
+    
+    // Caché en memoria
     const cached = obtenerDeCache('ras', moduloId);
     if (cached) {
         state.ras = cached;
         poblarSelectRAs();
         return;
     }
+    
     mostrarCargando(true, 'Cargando resultados de aprendizaje...');
     try {
-        const response = await fetchConTimeout(`${CONFIG.GOOGLE_SCRIPT_URL}?action=getRAs&moduloId=${moduloId}`);
+        const response = await ColaPeticiones.agregar(() =>
+            fetchConTimeout(`${CONFIG.GOOGLE_SCRIPT_URL}?action=getRAs&moduloId=${moduloId}`)
+        );
         const data = await response.json();
         state.ras = data.ras || [];
+        
+        // Guardar en ambos cachés
         guardarEnCache('ras', state.ras, moduloId);
+        CachePersistente.guardar(`ras_${moduloId}`, state.ras);
+        
         poblarSelectRAs();
     } catch (error) {
         console.error('❌ ERROR al cargar RAs:', error);
@@ -173,33 +380,49 @@ async function cargarCalificaciones(moduloId) {
 }
 
 async function cargarActividadesRA(raId) {
+    // Caché persistente
+    const cachePersist = CachePersistente.obtener(`actividades_${raId}`);
+    if (cachePersist) {
+        state.actividades = state.actividades.filter(a => a.raId != raId);
+        state.actividades.push(...cachePersist);
+        await cargarDescripcionesActividades(state.moduloSeleccionado, raId);
+        generarTablaActividades();
+        cargarInstrumentosRA(state.moduloSeleccionado, raId).then(() => {
+            generarTablaActividades();
+        });
+        console.log(`⚡ Actividades del RA ${raId} desde localStorage`);
+        return;
+    }
+    
+    // Caché en memoria
     const cached = obtenerDeCache('actividades', raId);
     if (cached) {
         state.actividades = state.actividades.filter(a => a.raId != raId);
         state.actividades.push(...cached);
-        // Cargar descripciones con moduloId
         await cargarDescripcionesActividades(state.moduloSeleccionado, raId);
-        // Generar tabla INMEDIATAMENTE
         generarTablaActividades();
-        // Precargar instrumentos en segundo plano y regenerar cuando termine
         cargarInstrumentosRA(state.moduloSeleccionado, raId).then(() => {
             generarTablaActividades();
         });
         return;
     }
+    
     mostrarCargando(true, 'Cargando actividades del RA...');
     try {
-        const response = await fetchConTimeout(`${CONFIG.GOOGLE_SCRIPT_URL}?action=getActividades&raId=${raId}`);
+        const response = await ColaPeticiones.agregar(() =>
+            fetchConTimeout(`${CONFIG.GOOGLE_SCRIPT_URL}?action=getActividades&raId=${raId}`)
+        );
         const data = await response.json();
         const actividadesDelRA = data.actividades || [];
+        
+        // Guardar en ambos cachés
         guardarEnCache('actividades', actividadesDelRA, raId);
+        CachePersistente.guardar(`actividades_${raId}`, actividadesDelRA);
+        
         state.actividades = state.actividades.filter(a => a.raId != raId);
         state.actividades.push(...actividadesDelRA);
-        // Cargar descripciones con moduloId
         await cargarDescripcionesActividades(state.moduloSeleccionado, raId);
-        // Generar tabla INMEDIATAMENTE
         generarTablaActividades();
-        // Precargar instrumentos en segundo plano y regenerar cuando termine
         cargarInstrumentosRA(state.moduloSeleccionado, raId).then(() => {
             generarTablaActividades();
         });
@@ -256,15 +479,18 @@ async function manejarCambioCurso(e) {
     if (curso) {
         state.cursoSeleccionado = curso;
         await cargarEstudiantes(curso);
-        poblarSelectModulos(); // Filtrar módulos según el curso seleccionado
-        // Si ya hay un módulo seleccionado, recargar la tabla
+        
+        // Precargar datos anticipadamente
+        Precargador.precargarCurso(curso);
+        
+        poblarSelectModulos();
         if (state.moduloSeleccionado) {
             await cargarCalificaciones(state.moduloSeleccionado);
         }
     } else {
         state.cursoSeleccionado = null;
         state.estudiantes = [];
-        poblarSelectModulos(); // Mostrar todos los módulos
+        poblarSelectModulos();
         elementos.tablaRegistroHead.innerHTML = '';
         elementos.tablaRegistroBody.innerHTML = '';
     }
@@ -279,6 +505,10 @@ async function manejarCambioModulo(e) {
             return;
         }
         state.moduloSeleccionado = moduloId;
+        
+        // Precargar RAs anticipadamente
+        Precargador.precargarModulo(moduloId);
+        
         try {
             // Cargar RAs y Calificaciones en paralelo
             await Promise.all([
@@ -288,7 +518,7 @@ async function manejarCambioModulo(e) {
         } catch (error) {
             console.error('Error al cargar módulo:', error);
         } finally {
-            mostrarCargando(false); // Garantiza que siempre se cierre
+            mostrarCargando(false);
         }
         elementos.btnGuardarRegistro.style.display = 'flex';
     } else {
@@ -980,11 +1210,12 @@ async function guardarTodasLasActividades() {
         
         elementos.btnGuardarActividades.textContent = '✅ Guardado';
         
-        // Invalidar caché de actividades y calificaciones
+        // Invalidar caché de actividades y calificaciones (memoria y localStorage)
         invalidarCache('actividades', state.raSeleccionado);
         invalidarCache('calificaciones', state.moduloSeleccionado);
+        CachePersistente.invalidar(`actividades_${state.raSeleccionado}`);
+        CachePersistente.invalidar(`calificaciones_${state.moduloSeleccionado}`);
         
-        // NO recargar inmediatamente - confiar en los datos locales que acabamos de guardar
         console.log('✅ Datos guardados - caché invalidado para próxima carga');
         
         setTimeout(() => {
