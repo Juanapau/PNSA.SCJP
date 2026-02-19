@@ -85,7 +85,7 @@ body {
 
 /* Header */
 header {
-    background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-gris-oscuro) 100%);
+    background: var(--color-primario);
     color: var(--color-blanco);
     padding: 30px;
     border-radius: 10px;
@@ -3370,7 +3370,7 @@ body.dark-mode .tooltip-bubble::after {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-gris-oscuro) 100%);
+    background: var(--color-primario);
     color: white;
     border-radius: 16px 16px 0 0;
 }
@@ -3588,7 +3588,7 @@ body.dark-mode .tooltip-bubble::after {
 
 .btn-agregar-criterio {
     padding: 10px 20px;
-    background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-gris-oscuro) 100%);
+    background: var(--color-primario);
     color: white;
     border: none;
     border-radius: 8px;
@@ -3678,7 +3678,7 @@ body.dark-mode .tooltip-bubble::after {
     align-items: center;
     gap: 15px;
     padding: 15px 20px;
-    background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-gris-oscuro) 100%);
+    background: var(--color-primario);
     border-radius: 8px;
     color: white;
     font-size: 1.05rem;
@@ -3727,7 +3727,7 @@ body.dark-mode .tooltip-bubble::after {
 
 .btn-modal-primario,
 .btn-eval-primario {
-    background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-gris-oscuro) 100%);
+    background: var(--color-primario);
     color: white;
 }
 
@@ -3758,7 +3758,7 @@ body.dark-mode .tooltip-bubble::after {
 .eval-avatar {
     width: 50px;
     height: 50px;
-    background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-gris-oscuro) 100%);
+    background: var(--color-primario);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -4033,7 +4033,7 @@ body.dark-mode .tooltip-bubble::after {
 .eval-resultado-panel {
     margin-top: 25px;
     padding: 20px 25px;
-    background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-gris-oscuro) 100%);
+    background: var(--color-primario);
     border-radius: 12px;
     color: white;
 }
