@@ -678,6 +678,7 @@ function generarTablaActividades() {
     if (!raActual) return;
     
     console.log('🎨 Generando tabla para RA:', state.raSeleccionado);
+    console.log('📋 Instrumentos en caché:', instrumentosCache.configuraciones);
     console.log('📝 Descripciones disponibles:', descripcionesActividades);
     
     // Generar encabezado
@@ -721,6 +722,12 @@ function generarTablaActividades() {
         for (let i = 1; i <= CONFIG.NUM_ACTIVIDADES; i++) {
             const valor = obtenerValorActividad(estudiante.id, i);
             const tieneInstrumento = tieneInstrumentoConfigurado(state.moduloSeleccionado, state.raSeleccionado, i);
+            
+            // Debug detallado
+            if (i <= 3) { // Solo para las primeras 3 actividades para no saturar
+                console.log(`  🔍 Ac.${i} - tiene instrumento:`, tieneInstrumento);
+            }
+            
             const claseExtra = tieneInstrumento ? ' celda-con-instrumento' : '';
             const iconoInstrumento = tieneInstrumento ? '<span class="icono-instrumento" title="Click para evaluar con instrumento">📋</span>' : '';
             
@@ -2826,6 +2833,9 @@ async function guardarConfigInstrumento() {
         }
         
         console.log('✅ Configuración guardada exitosamente');
+        console.log('📍 Vista actual:', state.vistaActual);
+        console.log('📍 Módulo seleccionado:', state.moduloSeleccionado);
+        console.log('📍 RA seleccionado:', state.raSeleccionado);
         
         // ACTUALIZAR CACHÉ INMEDIATAMENTE
         const clave = `${modalConfigState.moduloId}_${modalConfigState.raId}_${modalConfigState.numActividad}`;
@@ -2841,20 +2851,23 @@ async function guardarConfigInstrumento() {
                 valorActividad: valor
             };
             console.log(`💾 Caché actualizado para ${clave}:`, instrumentosCache.configuraciones[clave]);
+            console.log('📦 Estado completo del caché:', Object.keys(instrumentosCache.configuraciones));
         }
         
-        // Regenerar tabla INMEDIATAMENTE con el nuevo instrumento
-        if (state.vistaActual === 'actividades') {
-            console.log('🔄 Regenerando tabla con nuevo instrumento...');
-            generarTablaActividades();
-            console.log('✅ Tabla regenerada - verificando iconos...');
-            
-            // Verificar que los iconos aparezcan
-            setTimeout(() => {
-                const iconos = document.querySelectorAll('.icono-instrumento');
-                console.log(`📋 Iconos de instrumentos encontrados: ${iconos.length}`);
-            }, 100);
-        }
+        // FORZAR regeneración de tabla (sin condición)
+        console.log('🔄 FORZANDO regeneración de tabla...');
+        generarTablaActividades();
+        console.log('✅ Tabla regenerada');
+        
+        // Verificar que los iconos aparezcan
+        setTimeout(() => {
+            const iconos = document.querySelectorAll('.icono-instrumento');
+            console.log(`📋 Total de iconos en la página: ${iconos.length}`);
+            if (iconos.length === 0) {
+                console.error('❌ ERROR: No se encontraron iconos después de regenerar');
+                console.error('🔍 Verificando caché nuevamente:', instrumentosCache.configuraciones);
+            }
+        }, 200);
         
         cerrarModalConfigInstrumento();
         
