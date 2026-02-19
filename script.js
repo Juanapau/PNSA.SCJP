@@ -480,7 +480,20 @@ function generarTablaActividades() {
         
         for (let i = 1; i <= CONFIG.NUM_ACTIVIDADES; i++) {
             const valor = obtenerValorActividad(estudiante.id, i);
-            bodyHTML += `<td><input type="number" class="input-actividad" data-estudiante="${estudiante.id}" data-actividad="${i}" data-ra="${state.raSeleccionado}" value="${valor !== null && valor !== undefined ? valor : ''}" min="0" max="10"></td>`;
+            bodyHTML += `<td class="celda-actividad-eval" 
+                            data-estudiante="${estudiante.id}" 
+                            data-actividad="${i}" 
+                            data-ra="${state.raSeleccionado}"
+                            data-modulo="${state.moduloSeleccionado}">
+                            <input type="number" 
+                                   class="input-actividad" 
+                                   data-estudiante="${estudiante.id}" 
+                                   data-actividad="${i}" 
+                                   data-ra="${state.raSeleccionado}" 
+                                   value="${valor !== null && valor !== undefined ? valor : ''}" 
+                                   min="0" 
+                                   max="10">
+                         </td>`;
             totalActividades += valor || 0;
         }
         
@@ -2662,6 +2675,467 @@ document.addEventListener('click', function(e) {
             );
         } else {
             alert('⚠️ Por favor selecciona primero un módulo y un RA');
+        }
+    }
+});
+
+// ==========================================
+// MODAL DE EVALUACIÓN CON INSTRUMENTO
+// ==========================================
+
+const modalEvalState = {
+    estudianteId: null,
+    moduloId: null,
+    raId: null,
+    numActividad: null,
+    tipoInstrumento: null,
+    valorActividad: null,
+    criterios: [],
+    evaluaciones: {}
+};
+
+// Elementos del modal
+const modalEvalElementos = {
+    modal: document.getElementById('modalEvaluacion'),
+    overlay: document.querySelector('.modal-overlay-evaluacion'),
+    btnCerrar: document.getElementById('btnCerrarEvaluacion'),
+    btnCancelar: document.getElementById('btnCancelarEvaluacion'),
+    btnGuardar: document.getElementById('btnGuardarEvaluacion'),
+    titulo: document.getElementById('tituloEvaluacion'),
+    nombreEstudiante: document.getElementById('evalNombreEstudiante'),
+    detalleActividad: document.getElementById('evalDetalleActividad'),
+    valorActividad: document.getElementById('evalValorActividad'),
+    listaCotejo: document.getElementById('listaCriteriosCotejo'),
+    listaRubrica: document.getElementById('listaCriteriosRubrica'),
+    listaEscala: document.getElementById('listaCriteriosEscala'),
+    instrumentoCotejo: document.getElementById('instrumentoListaCotejo'),
+    instrumentoRubrica: document.getElementById('instrumentoRubrica'),
+    instrumentoEscala: document.getElementById('instrumentoEscala'),
+    puntosObtenidos: document.getElementById('evalPuntosObtenidos'),
+    puntosMaximos: document.getElementById('evalPuntosMaximos'),
+    valorBase: document.getElementById('evalValorBase'),
+    notaFinal: document.getElementById('evalNotaFinal')
+};
+
+// Abrir modal de evaluación
+async function abrirModalEvaluacion(estudianteId, moduloId, raId, numActividad) {
+    console.log(`📝 Abriendo evaluación para Estudiante ${estudianteId}, Ac.${numActividad}`);
+    
+    modalEvalState.estudianteId = estudianteId;
+    modalEvalState.moduloId = moduloId;
+    modalEvalState.raId = raId;
+    modalEvalState.numActividad = numActividad;
+    modalEvalState.evaluaciones = {};
+    
+    // Obtener información del estudiante
+    const estudiante = state.estudiantes.find(e => e.id == estudianteId);
+    const modulo = state.modulos.find(m => m.id == moduloId);
+    const ra = state.ras.find(r => r.id == raId);
+    
+    modalEvalElementos.nombreEstudiante.textContent = estudiante ? estudiante.nombre : '-';
+    modalEvalElementos.detalleActividad.textContent = `${modulo ? modulo.nombre : '-'} • ${ra ? ra.nombre : '-'} • Ac.${numActividad}`;
+    
+    try {
+        // 1. Obtener configuración del instrumento
+        const urlInstrumento = `${CONFIG.GOOGLE_SCRIPT_URL}?action=getInstrumentoActividad&moduloId=${moduloId}&raId=${raId}&numActividad=${numActividad}`;
+        const respInstrumento = await fetchConTimeout(urlInstrumento);
+        const dataInstrumento = await respInstrumento.json();
+        
+        if (!dataInstrumento.success || !dataInstrumento.configurado) {
+            alert('⚠️ Esta actividad no tiene instrumento configurado');
+            return;
+        }
+        
+        modalEvalState.tipoInstrumento = dataInstrumento.tipoInstrumento;
+        modalEvalState.valorActividad = dataInstrumento.valorActividad;
+        
+        modalEvalElementos.valorActividad.textContent = dataInstrumento.valorActividad;
+        modalEvalElementos.valorBase.textContent = dataInstrumento.valorActividad;
+        
+        // Actualizar título según tipo
+        const titulos = {
+            'lista_cotejo': '✓ Lista de Cotejo',
+            'rubrica': '⭐ Rúbrica',
+            'escala': '📊 Escala de Valoración'
+        };
+        modalEvalElementos.titulo.textContent = titulos[dataInstrumento.tipoInstrumento] || 'Evaluar Actividad';
+        
+        // 2. Obtener criterios
+        const urlCriterios = `${CONFIG.GOOGLE_SCRIPT_URL}?action=getCriteriosActividad&moduloId=${moduloId}&raId=${raId}&numActividad=${numActividad}`;
+        const respCriterios = await fetchConTimeout(urlCriterios);
+        const dataCriterios = await respCriterios.json();
+        
+        if (!dataCriterios.success || dataCriterios.criterios.length === 0) {
+            alert('⚠️ Esta actividad no tiene criterios configurados');
+            return;
+        }
+        
+        modalEvalState.criterios = dataCriterios.criterios;
+        
+        // Calcular total de puntos criterios
+        const totalPuntos = dataCriterios.criterios.reduce((sum, c) => sum + c.puntajeMax, 0);
+        modalEvalElementos.puntosMaximos.textContent = totalPuntos.toFixed(1);
+        
+        // 3. Cargar evaluación existente si hay
+        const urlEvaluacion = `${CONFIG.GOOGLE_SCRIPT_URL}?action=getEvaluacionDetallada&estudianteId=${estudianteId}&moduloId=${moduloId}&raId=${raId}&numActividad=${numActividad}`;
+        const respEvaluacion = await fetchConTimeout(urlEvaluacion);
+        const dataEvaluacion = await respEvaluacion.json();
+        
+        if (dataEvaluacion.success && dataEvaluacion.evaluaciones.length > 0) {
+            dataEvaluacion.evaluaciones.forEach(ev => {
+                modalEvalState.evaluaciones[ev.orden] = ev.calificacion;
+            });
+        }
+        
+        // 4. Mostrar instrumento correspondiente
+        ocultarTodosInstrumentos();
+        
+        switch (modalEvalState.tipoInstrumento) {
+            case 'lista_cotejo':
+                generarListaCotejo();
+                modalEvalElementos.instrumentoCotejo.style.display = 'block';
+                break;
+            case 'rubrica':
+                generarRubrica();
+                modalEvalElementos.instrumentoRubrica.style.display = 'block';
+                break;
+            case 'escala':
+                generarEscala();
+                modalEvalElementos.instrumentoEscala.style.display = 'block';
+                break;
+        }
+        
+        // Calcular nota inicial
+        calcularNotaFinal();
+        
+        // Mostrar modal
+        modalEvalElementos.modal.style.display = 'flex';
+        
+    } catch (error) {
+        console.error('Error al abrir modal de evaluación:', error);
+        alert('❌ Error al cargar la evaluación');
+    }
+}
+
+// Ocultar todos los instrumentos
+function ocultarTodosInstrumentos() {
+    modalEvalElementos.instrumentoCotejo.style.display = 'none';
+    modalEvalElementos.instrumentoRubrica.style.display = 'none';
+    modalEvalElementos.instrumentoEscala.style.display = 'none';
+}
+
+// Generar Lista de Cotejo
+function generarListaCotejo() {
+    modalEvalElementos.listaCotejo.innerHTML = '';
+    
+    modalEvalState.criterios.forEach((criterio, index) => {
+        const checked = modalEvalState.evaluaciones[criterio.orden] === criterio.puntajeMax ? 'checked' : '';
+        
+        const div = document.createElement('div');
+        div.className = 'eval-criterio-item lista-cotejo';
+        div.innerHTML = `
+            <div class="eval-criterio-header">
+                <span class="eval-criterio-nombre">${criterio.criterio}</span>
+                <span class="eval-criterio-puntaje">${criterio.puntajeMax} pts</span>
+            </div>
+            <label class="eval-checkbox-container">
+                <input type="checkbox" class="eval-checkbox" data-orden="${criterio.orden}" data-puntaje="${criterio.puntajeMax}" ${checked}>
+                <span class="eval-checkbox-label">Criterio cumplido</span>
+            </label>
+        `;
+        
+        const checkbox = div.querySelector('.eval-checkbox');
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                modalEvalState.evaluaciones[criterio.orden] = criterio.puntajeMax;
+            } else {
+                modalEvalState.evaluaciones[criterio.orden] = 0;
+            }
+            calcularNotaFinal();
+        });
+        
+        // Inicializar evaluación
+        if (checked) {
+            modalEvalState.evaluaciones[criterio.orden] = criterio.puntajeMax;
+        } else if (!(criterio.orden in modalEvalState.evaluaciones)) {
+            modalEvalState.evaluaciones[criterio.orden] = 0;
+        }
+        
+        modalEvalElementos.listaCotejo.appendChild(div);
+    });
+}
+
+// Generar Rúbrica
+function generarRubrica() {
+    modalEvalElementos.listaRubrica.innerHTML = '';
+    
+    modalEvalState.criterios.forEach((criterio, index) => {
+        const evalActual = modalEvalState.evaluaciones[criterio.orden] || 0;
+        
+        const niveles = [
+            { nombre: 'Excelente', valor: criterio.puntajeMax, clase: 'nivel-excelente' },
+            { nombre: 'Bueno', valor: criterio.puntajeMax * 0.8, clase: 'nivel-bueno' },
+            { nombre: 'Regular', valor: criterio.puntajeMax * 0.5, clase: 'nivel-regular' },
+            { nombre: 'Deficiente', valor: 0, clase: 'nivel-deficiente' }
+        ];
+        
+        const div = document.createElement('div');
+        div.className = 'eval-criterio-item rubrica';
+        div.innerHTML = `
+            <div class="eval-criterio-header">
+                <span class="eval-criterio-nombre">${criterio.criterio}</span>
+                <span class="eval-criterio-puntaje">${criterio.puntajeMax} pts</span>
+            </div>
+            <div class="eval-niveles-rubrica">
+                ${niveles.map(nivel => `
+                    <button type="button" class="eval-nivel-btn ${nivel.clase} ${evalActual === nivel.valor ? 'selected' : ''}" 
+                            data-orden="${criterio.orden}" 
+                            data-valor="${nivel.valor}">
+                        <span class="eval-nivel-nombre">${nivel.nombre}</span>
+                        <span class="eval-nivel-puntos">(${nivel.valor.toFixed(1)} pts)</span>
+                    </button>
+                `).join('')}
+            </div>
+        `;
+        
+        div.querySelectorAll('.eval-nivel-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const orden = parseInt(this.dataset.orden);
+                const valor = parseFloat(this.dataset.valor);
+                
+                // Quitar selected de todos los botones de este criterio
+                this.closest('.eval-niveles-rubrica').querySelectorAll('.eval-nivel-btn').forEach(b => {
+                    b.classList.remove('selected');
+                });
+                
+                // Agregar selected a este botón
+                this.classList.add('selected');
+                
+                // Guardar evaluación
+                modalEvalState.evaluaciones[orden] = valor;
+                calcularNotaFinal();
+            });
+        });
+        
+        // Inicializar evaluación
+        if (!(criterio.orden in modalEvalState.evaluaciones)) {
+            modalEvalState.evaluaciones[criterio.orden] = 0;
+        }
+        
+        modalEvalElementos.listaRubrica.appendChild(div);
+    });
+}
+
+// Generar Escala
+function generarEscala() {
+    modalEvalElementos.listaEscala.innerHTML = '';
+    
+    modalEvalState.criterios.forEach((criterio, index) => {
+        const evalActual = modalEvalState.evaluaciones[criterio.orden];
+        let nivelActual = 0;
+        
+        if (evalActual !== undefined) {
+            nivelActual = Math.round((evalActual / criterio.puntajeMax) * 5);
+        }
+        
+        const div = document.createElement('div');
+        div.className = 'eval-criterio-item escala';
+        div.innerHTML = `
+            <div class="eval-criterio-header">
+                <span class="eval-criterio-nombre">${criterio.criterio}</span>
+                <span class="eval-criterio-puntaje">${criterio.puntajeMax} pts</span>
+            </div>
+            <div class="eval-escala-container">
+                <div class="eval-escala-numeros">
+                    ${[1,2,3,4,5].map(n => `
+                        <button type="button" class="eval-escala-btn ${nivelActual === n ? 'selected' : ''}" 
+                                data-orden="${criterio.orden}" 
+                                data-nivel="${n}" 
+                                data-puntaje-max="${criterio.puntajeMax}">
+                            ${n}
+                        </button>
+                    `).join('')}
+                </div>
+                <span class="eval-escala-valor">${nivelActual}/5</span>
+            </div>
+        `;
+        
+        div.querySelectorAll('.eval-escala-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const orden = parseInt(this.dataset.orden);
+                const nivel = parseInt(this.dataset.nivel);
+                const puntajeMax = parseFloat(this.dataset.puntajeMax);
+                
+                // Quitar selected de todos
+                this.closest('.eval-escala-numeros').querySelectorAll('.eval-escala-btn').forEach(b => {
+                    b.classList.remove('selected');
+                });
+                
+                // Agregar selected
+                this.classList.add('selected');
+                
+                // Actualizar texto
+                this.closest('.eval-escala-container').querySelector('.eval-escala-valor').textContent = `${nivel}/5`;
+                
+                // Calcular puntaje proporcional
+                const puntaje = (nivel / 5) * puntajeMax;
+                modalEvalState.evaluaciones[orden] = puntaje;
+                calcularNotaFinal();
+            });
+        });
+        
+        // Inicializar evaluación
+        if (!(criterio.orden in modalEvalState.evaluaciones)) {
+            modalEvalState.evaluaciones[criterio.orden] = 0;
+        }
+        
+        modalEvalElementos.listaEscala.appendChild(div);
+    });
+}
+
+// Calcular nota final
+function calcularNotaFinal() {
+    // Sumar puntos obtenidos
+    let puntosObtenidos = 0;
+    Object.values(modalEvalState.evaluaciones).forEach(val => {
+        puntosObtenidos += val || 0;
+    });
+    
+    // Total de puntos máximos de criterios
+    const puntosMaximos = modalEvalState.criterios.reduce((sum, c) => sum + c.puntajeMax, 0);
+    
+    // Calcular nota final proporcional
+    const notaFinal = puntosMaximos > 0 ? (puntosObtenidos / puntosMaximos) * modalEvalState.valorActividad : 0;
+    
+    // Actualizar UI
+    modalEvalElementos.puntosObtenidos.textContent = puntosObtenidos.toFixed(1);
+    modalEvalElementos.notaFinal.textContent = notaFinal.toFixed(2);
+}
+
+// Cerrar modal
+function cerrarModalEvaluacion() {
+    modalEvalElementos.modal.style.display = 'none';
+    modalEvalState.evaluaciones = {};
+}
+
+// Guardar evaluación
+async function guardarEvaluacion() {
+    modalEvalElementos.btnGuardar.disabled = true;
+    modalEvalElementos.btnGuardar.textContent = '⏳ Guardando...';
+    
+    try {
+        // Preparar evaluaciones
+        const evaluaciones = [];
+        modalEvalState.criterios.forEach(criterio => {
+            evaluaciones.push({
+                orden: criterio.orden,
+                calificacion: modalEvalState.evaluaciones[criterio.orden] || 0
+            });
+        });
+        
+        // Calcular nota final
+        const puntosObtenidos = Object.values(modalEvalState.evaluaciones).reduce((sum, val) => sum + (val || 0), 0);
+        const puntosMaximos = modalEvalState.criterios.reduce((sum, c) => sum + c.puntajeMax, 0);
+        const notaFinal = puntosMaximos > 0 ? (puntosObtenidos / puntosMaximos) * modalEvalState.valorActividad : 0;
+        
+        // Guardar evaluación detallada
+        const dataEval = {
+            action: 'guardarEvaluacionDetallada',
+            estudianteId: modalEvalState.estudianteId,
+            moduloId: modalEvalState.moduloId,
+            raId: modalEvalState.raId,
+            numActividad: modalEvalState.numActividad,
+            evaluaciones: evaluaciones
+        };
+        
+        const respEval = await fetch(CONFIG.GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify(dataEval)
+        });
+        
+        const resultEval = await respEval.json();
+        
+        if (!resultEval.success) {
+            throw new Error('Error al guardar evaluación detallada');
+        }
+        
+        // Guardar nota final en hoja Actividades
+        const dataActividad = {
+            action: 'guardarActividad',
+            estudianteId: modalEvalState.estudianteId,
+            raId: modalEvalState.raId,
+            numeroActividad: modalEvalState.numActividad,
+            calificacion: parseFloat(notaFinal.toFixed(2))
+        };
+        
+        const respActividad = await fetch(CONFIG.GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify(dataActividad)
+        });
+        
+        const resultActividad = await respActividad.json();
+        
+        if (!resultActividad.success) {
+            throw new Error('Error al guardar calificación en Actividades');
+        }
+        
+        console.log('✅ Evaluación guardada exitosamente');
+        alert('✅ Evaluación guardada exitosamente');
+        
+        // Cerrar modal
+        cerrarModalEvaluacion();
+        
+        // Actualizar tabla de actividades
+        if (state.vistaActual === 'actividades') {
+            await cargarActividadesRA(modalEvalState.raId);
+            generarTablaActividades();
+        }
+        
+    } catch (error) {
+        console.error('Error al guardar evaluación:', error);
+        alert('❌ Error al guardar la evaluación');
+    } finally {
+        modalEvalElementos.btnGuardar.disabled = false;
+        modalEvalElementos.btnGuardar.textContent = '💾 Guardar Evaluación';
+    }
+}
+
+// Event listeners
+modalEvalElementos.btnCerrar.addEventListener('click', cerrarModalEvaluacion);
+modalEvalElementos.btnCancelar.addEventListener('click', cerrarModalEvaluacion);
+modalEvalElementos.overlay.addEventListener('click', cerrarModalEvaluacion);
+modalEvalElementos.btnGuardar.addEventListener('click', guardarEvaluacion);
+
+// ==========================================
+// DETECTAR CLICK EN CELDAS PARA EVALUACIÓN
+// ==========================================
+
+document.addEventListener('click', async function(e) {
+    // Si el click fue en una celda de actividad (pero NO en el input)
+    const celda = e.target.closest('.celda-actividad-eval');
+    
+    if (celda && !e.target.classList.contains('input-actividad')) {
+        const estudianteId = celda.dataset.estudiante;
+        const numActividad = celda.dataset.actividad;
+        const raId = celda.dataset.ra;
+        const moduloId = celda.dataset.modulo;
+        
+        // Verificar si tiene instrumento configurado
+        try {
+            const url = `${CONFIG.GOOGLE_SCRIPT_URL}?action=getInstrumentoActividad&moduloId=${moduloId}&raId=${raId}&numActividad=${numActividad}`;
+            const response = await fetchConTimeout(url);
+            const data = await response.json();
+            
+            if (data.success && data.configurado && data.tipoInstrumento !== 'sin_instrumento') {
+                // Tiene instrumento, abrir modal de evaluación
+                e.preventDefault();
+                abrirModalEvaluacion(estudianteId, moduloId, raId, numActividad);
+            }
+            // Si no tiene instrumento o es sin_instrumento, dejar que el input funcione normal
+            
+        } catch (error) {
+            console.error('Error al verificar instrumento:', error);
+            // En caso de error, dejar funcionar el input normal
         }
     }
 });
