@@ -2619,7 +2619,10 @@ async function abrirModalConfigInstrumento(moduloId, raId, numActividad) {
     document.getElementById('radioSinInstrumento').checked = true;
     modalConfigElementos.criteriosSection.style.display = 'none';
     
-    // Cargar configuración existente si hay
+    // ABRIR MODAL INMEDIATAMENTE ⚡
+    modalConfigElementos.modal.style.display = 'flex';
+    
+    // Cargar configuración existente en segundo plano
     try {
         const url = `${CONFIG.GOOGLE_SCRIPT_URL}?action=getInstrumentoActividad&moduloId=${moduloId}&raId=${raId}&numActividad=${numActividad}`;
         const response = await fetchConTimeout(url);
@@ -2637,8 +2640,6 @@ async function abrirModalConfigInstrumento(moduloId, raId, numActividad) {
     } catch (error) {
         console.error('Error al cargar configuración:', error);
     }
-    
-    modalConfigElementos.modal.style.display = 'flex';
 }
 
 function capitalizeFirst(str) {
@@ -2826,16 +2827,39 @@ async function guardarConfigInstrumento() {
         
         console.log('✅ Configuración guardada exitosamente');
         
+        // ACTUALIZAR CACHÉ INMEDIATAMENTE
+        const clave = `${modalConfigState.moduloId}_${modalConfigState.raId}_${modalConfigState.numActividad}`;
+        
+        if (tipoInstrumento === 'sin_instrumento') {
+            // Eliminar del caché si se configura "sin instrumento"
+            delete instrumentosCache.configuraciones[clave];
+            console.log(`🗑️ Instrumento eliminado del caché: ${clave}`);
+        } else {
+            // Agregar/actualizar en caché
+            instrumentosCache.configuraciones[clave] = {
+                tipoInstrumento: tipoInstrumento,
+                valorActividad: valor
+            };
+            console.log(`💾 Caché actualizado para ${clave}:`, instrumentosCache.configuraciones[clave]);
+        }
+        
+        // Regenerar tabla INMEDIATAMENTE con el nuevo instrumento
+        if (state.vistaActual === 'actividades') {
+            console.log('🔄 Regenerando tabla con nuevo instrumento...');
+            generarTablaActividades();
+            console.log('✅ Tabla regenerada - verificando iconos...');
+            
+            // Verificar que los iconos aparezcan
+            setTimeout(() => {
+                const iconos = document.querySelectorAll('.icono-instrumento');
+                console.log(`📋 Iconos de instrumentos encontrados: ${iconos.length}`);
+            }, 100);
+        }
+        
         cerrarModalConfigInstrumento();
         
         // Mostrar mensaje elegante
         mostrarMensajeExito('¡Configuración Guardada!', 'El instrumento ha sido configurado exitosamente');
-        
-        // Recargar instrumentos y regenerar tabla
-        if (state.vistaActual === 'actividades') {
-            await cargarInstrumentosRA(modalConfigState.moduloId, modalConfigState.raId);
-            generarTablaActividades();
-        }
         
     } catch (error) {
         console.error('Error al guardar configuración:', error);
