@@ -3475,17 +3475,17 @@ body.dark-mode .tooltip-bubble::after {
 }
 
 .lista-cotejo-icon {
-    background: linear-gradient(135deg, #4CAF50, #81C784);
+    background: linear-gradient(135deg, #5C6BC0, #7986CB);
     color: white;
 }
 
 .rubrica-icon {
-    background: linear-gradient(135deg, #2196F3, #64B5F6);
+    background: linear-gradient(135deg, #42A5F5, #64B5F6);
     color: white;
 }
 
 .escala-icon {
-    background: linear-gradient(135deg, #FF9800, #FFB74D);
+    background: linear-gradient(135deg, #607D8B, #78909C);
     color: white;
 }
 
@@ -3977,7 +3977,7 @@ body.dark-mode .modal-footer-instrumento {
 }
 
 .eval-criterio-item.lista-cotejo {
-    border-left-color: #4CAF50;
+    border-left-color: #5C6BC0;
 }
 
 .eval-checkbox-container {
@@ -3992,7 +3992,7 @@ body.dark-mode .modal-footer-instrumento {
     width: 28px;
     height: 28px;
     cursor: pointer;
-    accent-color: #4CAF50;
+    accent-color: #5C6BC0;
 }
 
 .eval-checkbox-label {
@@ -4006,7 +4006,7 @@ body.dark-mode .modal-footer-instrumento {
 }
 
 .eval-criterio-item.rubrica {
-    border-left-color: #2196F3;
+    border-left-color: #42A5F5;
 }
 
 .eval-niveles-rubrica {
@@ -4028,35 +4028,35 @@ body.dark-mode .modal-footer-instrumento {
 }
 
 .eval-nivel-btn:hover {
-    border-color: #764ba2;
+    border-color: #42A5F5;
     background: rgba(0, 0, 0, 0.05);
     transform: translateY(-2px);
 }
 
 .eval-nivel-btn.selected {
-    border-color: #764ba2;
+    border-color: #42A5F5;
     color: white;
     transform: scale(1.05);
 }
 
 .eval-nivel-btn.nivel-excelente.selected {
-    background: #667eea;
-    border-color: #667eea;
+    background: #5C6BC0;
+    border-color: #5C6BC0;
 }
 
 .eval-nivel-btn.nivel-bueno.selected {
-    background: #764ba2;
-    border-color: #764ba2;
+    background: #42A5F5;
+    border-color: #42A5F5;
 }
 
 .eval-nivel-btn.nivel-regular.selected {
-    background: #FF9800;
-    border-color: #FF9800;
+    background: #78909C;
+    border-color: #78909C;
 }
 
 .eval-nivel-btn.nivel-deficiente.selected {
-    background: #F44336;
-    border-color: #F44336;
+    background: #EF5350;
+    border-color: #EF5350;
 }
 
 .eval-nivel-nombre {
@@ -4072,7 +4072,7 @@ body.dark-mode .modal-footer-instrumento {
 }
 
 .eval-criterio-item.escala {
-    border-left-color: #FF9800;
+    border-left-color: #607D8B;
 }
 
 .eval-escala-container {
@@ -4101,17 +4101,17 @@ body.dark-mode .modal-footer-instrumento {
 }
 
 .eval-escala-btn:hover {
-    border-color: #FF9800;
+    border-color: #607D8B;
     background: rgba(0, 0, 0, 0.05);
     transform: scale(1.1);
 }
 
 .eval-escala-btn.selected {
-    border-color: #FF9800;
-    background: #FF9800;
+    border-color: #607D8B;
+    background: #607D8B;
     color: white;
     transform: scale(1.15);
-    box-shadow: 0 4px 12px rgba(51, 51, 51, 0.4);
+    box-shadow: 0 4px 12px rgba(96, 125, 139, 0.4);
 }
 
 .eval-escala-valor {
@@ -4119,7 +4119,7 @@ body.dark-mode .modal-footer-instrumento {
     text-align: center;
     font-weight: 700;
     font-size: 1.1rem;
-    color: #FF9800;
+    color: #607D8B;
 }
 
 .eval-resultado-panel {
