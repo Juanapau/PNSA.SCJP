@@ -3473,3 +3473,232 @@ function cerrarMensajeExito(btn) {
     if (mensaje) mensaje.remove();
     if (overlay) overlay.remove();
 }
+
+// ==========================================
+// PWA - SERVICE WORKER Y MODO OFFLINE
+// ==========================================
+
+// Registrar Service Worker
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+                console.log('✅ Service Worker registrado:', registration.scope);
+                
+                // Verificar actualizaciones periódicamente
+                setInterval(() => {
+                    registration.update();
+                }, 60000); // Cada minuto
+                
+                // Escuchar mensajes del Service Worker
+                navigator.serviceWorker.addEventListener('message', event => {
+                    if (event.data && event.data.type === 'SYNC_COMPLETE') {
+                        console.log(`✅ ${event.data.count} peticiones sincronizadas`);
+                        mostrarNotificacionSincronizacion(event.data.count);
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('❌ Error al registrar Service Worker:', error);
+            });
+    });
+    
+    // Detectar cuando el Service Worker se actualiza
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        refreshing = true;
+        console.log('🔄 Nueva versión disponible, recargando...');
+        window.location.reload();
+    });
+}
+
+// Detectar estado de conexión
+let isOnline = navigator.onLine;
+let offlineQueue = [];
+
+window.addEventListener('online', () => {
+    console.log('🌐 Conexión restaurada');
+    isOnline = true;
+    mostrarMensajeConexion('online');
+    
+    // Sincronizar datos pendientes
+    if ('serviceWorker' in navigator && 'sync' in registration) {
+        navigator.serviceWorker.ready.then(registration => {
+            return registration.sync.register('sync-offline-data');
+        });
+    } else {
+        // Fallback si no hay Background Sync
+        sincronizarColaOffline();
+    }
+});
+
+window.addEventListener('offline', () => {
+    console.log('📡 Sin conexión');
+    isOnline = false;
+    mostrarMensajeConexion('offline');
+});
+
+// Mostrar mensaje de conexión
+function mostrarMensajeConexion(status) {
+    const mensaje = document.createElement('div');
+    mensaje.className = 'mensaje-conexion';
+    mensaje.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 25px;
+        border-radius: 10px;
+        color: white;
+        font-weight: 600;
+        z-index: 10003;
+        animation: slideInRight 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    `;
+    
+    if (status === 'online') {
+        mensaje.style.background = 'linear-gradient(135deg, #66BB6A, #81C784)';
+        mensaje.textContent = '🌐 Conexión restaurada';
+    } else {
+        mensaje.style.background = 'linear-gradient(135deg, #EF5350, #E57373)';
+        mensaje.textContent = '📡 Modo offline - Los datos se guardarán localmente';
+    }
+    
+    document.body.appendChild(mensaje);
+    
+    setTimeout(() => {
+        mensaje.style.animation = 'slideOutRight 0.3s ease';
+        setTimeout(() => mensaje.remove(), 300);
+    }, 4000);
+}
+
+// Mostrar notificación de sincronización
+function mostrarNotificacionSincronizacion(count) {
+    mostrarMensajeExito(
+        '✅ Datos Sincronizados',
+        `${count} ${count === 1 ? 'registro' : 'registros'} sincronizado${count === 1 ? '' : 's'} con el servidor`
+    );
+}
+
+// Sincronizar cola offline (fallback)
+async function sincronizarColaOffline() {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+            type: 'SYNC_NOW'
+        });
+    }
+}
+
+// Wrapper para fetch que maneja offline
+async function fetchConOffline(url, options = {}) {
+    if (!isOnline) {
+        console.log('📡 Modo offline, guardando en cola:', url);
+        // Intentar desde caché
+        const cachedResponse = await caches.match(url);
+        if (cachedResponse) {
+            return cachedResponse;
+        }
+        throw new Error('Sin conexión y sin caché disponible');
+    }
+    
+    try {
+        return await fetch(url, options);
+    } catch (error) {
+        console.error('❌ Error en fetch:', error);
+        // Intentar desde caché
+        const cachedResponse = await caches.match(url);
+        if (cachedResponse) {
+            console.log('📦 Usando respuesta cacheada');
+            return cachedResponse;
+        }
+        throw error;
+    }
+}
+
+// Botón de instalación PWA
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    mostrarBotonInstalar();
+});
+
+function mostrarBotonInstalar() {
+    const btnInstalar = document.createElement('button');
+    btnInstalar.id = 'btnInstalarPWA';
+    btnInstalar.innerHTML = '📱 Instalar App';
+    btnInstalar.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 12px 24px;
+        background: linear-gradient(135deg, #5C6BC0, #7986CB);
+        color: white;
+        border: none;
+        border-radius: 50px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(92, 107, 192, 0.4);
+        z-index: 1000;
+        animation: pulse 2s infinite;
+    `;
+    
+    btnInstalar.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`Usuario ${outcome === 'accepted' ? 'aceptó' : 'rechazó'} instalar la app`);
+            deferredPrompt = null;
+            btnInstalar.remove();
+        }
+    });
+    
+    document.body.appendChild(btnInstalar);
+    
+    // Auto-ocultar después de 10 segundos
+    setTimeout(() => {
+        if (btnInstalar.parentNode) {
+            btnInstalar.style.animation = 'slideOutRight 0.3s ease';
+            setTimeout(() => btnInstalar.remove(), 300);
+        }
+    }, 10000);
+}
+
+// Agregar animaciones CSS
+const style = document.createElement('style');
+style.textContent = `
+@keyframes slideInRight {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+`;
+document.head.appendChild(style);
+
+console.log('🚀 PWA inicializado - Estado de conexión:', isOnline ? 'Online' : 'Offline');
