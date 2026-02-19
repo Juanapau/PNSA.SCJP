@@ -3082,6 +3082,10 @@ async function guardarEvaluacion() {
         console.log('✅ Evaluación guardada exitosamente');
         alert('✅ Evaluación guardada exitosamente');
         
+        // Invalidar caché de actividades para este RA
+        console.log('🗑️ Invalidando caché de actividades para RA:', modalEvalState.raId);
+        invalidarCache('actividades', modalEvalState.raId);
+        
         // Cerrar modal
         cerrarModalEvaluacion();
         
