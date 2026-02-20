@@ -2215,10 +2215,10 @@ body.dark-mode .toggle-switch::after {
     justify-content: center;
     gap: 10px;
     padding: 11px 16px;
-    background: rgba(239, 83, 80, 0.07);
-    border: 1px solid rgba(239, 83, 80, 0.2);
+    background: rgba(92, 107, 192, 0.1);
+    border: 1px solid rgba(92, 107, 192, 0.25);
     border-radius: 10px;
-    color: #ef5350;
+    color: #5C6BC0;
     font-size: 0.88rem;
     font-weight: 600;
     cursor: pointer;
@@ -2227,8 +2227,8 @@ body.dark-mode .toggle-switch::after {
 }
 
 .menu-btn-salir:hover {
-    background: rgba(239, 83, 80, 0.14);
-    border-color: rgba(239, 83, 80, 0.4);
+    background: rgba(92, 107, 192, 0.18);
+    border-color: rgba(92, 107, 192, 0.45);
 }
 
 .menu-btn-salir:active {
@@ -2267,18 +2267,19 @@ body.dark-mode .menu-item:hover {
     background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
 }
 
-body.dark-mode .menu-footer {
-    border-top-color: #444;
-}
-
 body.dark-mode .menu-btn-salir {
-    background: rgba(239, 83, 80, 0.1);
-    border-color: rgba(239, 83, 80, 0.25);
+    background: rgba(100, 181, 246, 0.08);
+    border-color: rgba(100, 181, 246, 0.2);
+    color: #64B5F6;
 }
 
 body.dark-mode .menu-btn-salir:hover {
-    background: rgba(239, 83, 80, 0.18);
-    border-color: rgba(239, 83, 80, 0.45);
+    background: rgba(100, 181, 246, 0.15);
+    border-color: rgba(100, 181, 246, 0.4);
+}
+
+body.dark-mode .menu-footer {
+    border-top-color: #444;
 }
 
 /* Ocultar iconos según modo */
@@ -4263,4 +4264,21 @@ body.dark-mode .mensaje-confirmacion {
 
 @keyframes fadeIn {
     to { opacity: 1; }
+}
+
+/* Celdas sin día asignado (columnas vacías del header) */
+.celda-sin-dia {
+    opacity: 0.25;
+    pointer-events: none;
+}
+
+.input-asistencia.celda-vacia {
+    background-color: #263238 !important;
+    border-color: #37474F !important;
+    cursor: not-allowed;
+}
+
+.input-dia-header::placeholder {
+    color: #546E7A;
+    font-size: 0.8rem;
 }
