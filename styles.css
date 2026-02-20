@@ -2193,15 +2193,51 @@ body.dark-mode .toggle-switch::after {
 
 /* Footer del menú */
 .menu-footer {
-    padding: 20px;
+    padding: 16px 20px 20px;
     text-align: center;
     border-top: 1px solid #E0E0E0;
     color: var(--color-texto-secundario);
     font-size: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: center;
 }
 
 .menu-footer p {
     margin: 0;
+}
+
+.menu-btn-salir {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 11px 16px;
+    background: rgba(239, 83, 80, 0.07);
+    border: 1px solid rgba(239, 83, 80, 0.2);
+    border-radius: 10px;
+    color: #ef5350;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, transform 0.1s;
+    font-family: inherit;
+}
+
+.menu-btn-salir:hover {
+    background: rgba(239, 83, 80, 0.14);
+    border-color: rgba(239, 83, 80, 0.4);
+}
+
+.menu-btn-salir:active {
+    transform: scale(0.98);
+}
+
+.menu-salir-icono {
+    font-size: 1rem;
+    line-height: 1;
 }
 
 /* Modo oscuro */
@@ -2233,6 +2269,16 @@ body.dark-mode .menu-item:hover {
 
 body.dark-mode .menu-footer {
     border-top-color: #444;
+}
+
+body.dark-mode .menu-btn-salir {
+    background: rgba(239, 83, 80, 0.1);
+    border-color: rgba(239, 83, 80, 0.25);
+}
+
+body.dark-mode .menu-btn-salir:hover {
+    background: rgba(239, 83, 80, 0.18);
+    border-color: rgba(239, 83, 80, 0.45);
 }
 
 /* Ocultar iconos según modo */
