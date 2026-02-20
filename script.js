@@ -2,18 +2,44 @@
 // Si el usuario no pasó por el login, redirigir automáticamente.
 (function() {
     if (!sessionStorage.getItem('scjp_auth')) {
-        window.location.replace('login.html');
+        window.location.replace('index.html');
     }
 })();
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ── Cerrar sesión ─────────────────────────────────────────────────────────────
 function cerrarSesion() {
-    if (confirm('¿Seguro que deseas cerrar sesión?')) {
-        sessionStorage.removeItem('scjp_auth');
-        sessionStorage.removeItem('scjp_usuario');
-        window.location.replace('login.html');
-    }
+    // Modal de confirmación al estilo del sistema
+    const overlay = document.createElement('div');
+    overlay.className = 'mensaje-confirmacion-overlay';
+
+    const modal = document.createElement('div');
+    modal.className = 'mensaje-confirmacion';
+    modal.innerHTML = `
+        <div class="mensaje-confirmacion-icono">⏻</div>
+        <div class="mensaje-confirmacion-titulo">Cerrar sesión</div>
+        <div class="mensaje-confirmacion-texto">¿Estás seguro que deseas salir del sistema?</div>
+        <div style="display:flex; gap:12px; justify-content:center; margin-top:4px;">
+            <button class="mensaje-confirmacion-btn" style="background:var(--color-primario);" onclick="confirmarSalida()">Sí, salir</button>
+            <button class="mensaje-confirmacion-btn" style="background:#90A4AE;" onclick="cancelarSalida()">Cancelar</button>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+    document.body.appendChild(modal);
+}
+
+function confirmarSalida() {
+    sessionStorage.removeItem('scjp_auth');
+    sessionStorage.removeItem('scjp_usuario');
+    window.location.replace('index.html');
+}
+
+function cancelarSalida() {
+    const modal = document.querySelector('.mensaje-confirmacion');
+    const overlay = document.querySelector('.mensaje-confirmacion-overlay');
+    if (modal) modal.remove();
+    if (overlay) overlay.remove();
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
