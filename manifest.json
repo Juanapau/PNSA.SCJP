@@ -2,7 +2,7 @@
   "name": "Sistema de Calificaciones JP",
   "short_name": "SCJP",
   "description": "Registro de calificaciones, asistencia y actividades de módulos formativos - Politécnico NSA",
-  "start_url": "/PNSA.SCJP/login.html",
+  "start_url": "/PNSA.SCJP/index.html",
   "scope": "/PNSA.SCJP/",
   "display": "standalone",
   "background_color": "#1a1a1a",
