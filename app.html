@@ -302,6 +302,9 @@
                 </div>
                 
                 <div class="resumen-dias-trabajados">
+                    <button id="btnResumenAnual" class="btn-resumen-anual" title="Ver resumen anual de asistencia">
+                        📊 Resumen anual
+                    </button>
                     <span class="resumen-label-trabajados">Días trabajados:</span>
                     <span class="resumen-numero-trabajados" id="diasTrabajados">0</span>
                 </div>
@@ -319,6 +322,35 @@
                     <table id="tablaAsistencia">
                         <thead id="tablaAsistenciaHead"></thead>
                         <tbody id="tablaAsistenciaBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vista Resumen Anual de Asistencia -->
+        <div id="vistaResumenAnual" class="vista-resumen-anual" style="display:none;">
+            <div class="tabla-header-con-boton resumen-anual-vista-header">
+                <div class="resumen-anual-vista-titulo">
+                    <h2>📊 Resumen Anual de Asistencia</h2>
+                    <p id="resumenAnualInfo" class="resumen-anual-info-texto">—</p>
+                </div>
+                <div class="botones-asistencia">
+                    <button id="btnVolverDesdeResumen" class="btn-volver-asistencia">
+                        ← Volver
+                    </button>
+                </div>
+            </div>
+
+            <div id="resumenAnualCargando" class="resumen-anual-loading">
+                <div class="resumen-spinner-grande"></div>
+                <span>Consultando datos de asistencia de todos los meses…</span>
+            </div>
+
+            <div id="resumenAnualTablaWrap" class="resumen-anual-tabla-wrap" style="display:none;">
+                <div class="resumen-anual-tabla-scroll">
+                    <table id="tablaResumenAnual" class="tabla-resumen-anual">
+                        <thead id="tablaResumenAnualHead"></thead>
+                        <tbody id="tablaResumenAnualBody"></tbody>
                     </table>
                 </div>
             </div>
