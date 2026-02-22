@@ -25,8 +25,17 @@
     
     <title>PNSA.SCJP</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- PDF Export Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
+    <!-- Indicador de cambios sin guardar -->
+    <div id="indicadorCambios" class="cambios-sin-guardar">
+        <span>⚠️</span>
+        <span>Hay cambios sin guardar</span>
+    </div>
+
     <!-- Botón flotante para abrir menú -->
     <button id="btnAbrirMenu" class="btn-menu-flotante" aria-label="Abrir menú">
         <span class="icono-menu">☰</span>
@@ -124,9 +133,14 @@
             <div id="tablaRegistroContainer" class="tabla-container">
                 <div class="tabla-header-con-boton">
                     <h2>Registro de Calificaciones - Módulos</h2>
-                    <button id="btnGuardarRegistro" class="btn-guardar">
-                        💾 Guardar
-                    </button>
+                    <div class="btns-tabla-acciones">
+                        <button id="btnGuardarRegistro" class="btn-guardar">
+                            💾 Guardar
+                        </button>
+                        <button id="btnExportarPDF" class="btn-exportar-pdf" onclick="exportarReporteCalificaciones()">
+                            📄 Exportar PDF
+                        </button>
+                    </div>
                 </div>
                 <div class="tabla-scroll" id="tablaScrollRegistro">
                     <!-- Botones de navegación flotantes -->
