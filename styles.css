@@ -1826,6 +1826,261 @@ body.dark-mode .resumen-numero-trabajados {
     }
 }
 
+/* ── BOTÓN RESUMEN ANUAL ─────────────────────────────────────── */
+.btn-resumen-anual {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #5090d0;
+    background: rgba(64, 132, 210, 0.10);
+    border: 1px solid rgba(64, 132, 210, 0.28);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+}
+
+.btn-resumen-anual:hover {
+    background: rgba(64, 132, 210, 0.22);
+    border-color: rgba(64, 132, 210, 0.55);
+    color: #3070bb;
+}
+
+body.dark-mode .btn-resumen-anual {
+    color: #7ab4e8;
+    background: rgba(100, 160, 220, 0.12);
+    border-color: rgba(100, 160, 220, 0.30);
+}
+
+body.dark-mode .btn-resumen-anual:hover {
+    background: rgba(100, 160, 220, 0.22);
+    border-color: rgba(100, 160, 220, 0.55);
+    color: #a0ccf0;
+}
+
+/* ── VISTA INDEPENDIENTE RESUMEN ANUAL ──────────────────────── */
+.vista-resumen-anual {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.resumen-anual-vista-header {
+    margin-bottom: 20px;
+}
+
+.resumen-anual-vista-titulo h2 {
+    margin: 0 0 4px;
+    font-size: 1.3rem;
+}
+
+.resumen-anual-info-texto {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--color-texto-secundario);
+}
+
+/* Spinner de carga */
+.resumen-anual-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 60px 20px;
+    color: var(--color-texto-secundario);
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.resumen-spinner-grande {
+    width: 36px;
+    height: 36px;
+    border: 3px solid rgba(64, 132, 210, 0.20);
+    border-top-color: #4084d2;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Tabla */
+.resumen-anual-tabla-wrap {
+    background: var(--color-blanco);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+.resumen-anual-tabla-scroll {
+    overflow-x: auto;
+}
+
+.tabla-resumen-anual {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+/* Encabezado */
+.tabla-resumen-anual thead tr {
+    background: #2c3e50;
+}
+
+.tabla-resumen-anual th {
+    color: #fff;
+    font-weight: 600;
+    padding: 12px 14px;
+    text-align: center;
+    white-space: nowrap;
+    border-right: 1px solid rgba(255,255,255,0.08);
+    font-size: 0.82rem;
+    letter-spacing: 0.02em;
+}
+
+.tabla-resumen-anual th.col-nombre {
+    text-align: left;
+    min-width: 180px;
+    padding-left: 16px;
+}
+
+.tabla-resumen-anual th.col-num {
+    width: 44px;
+    min-width: 44px;
+}
+
+.tabla-resumen-anual th.col-promedio {
+    background: #1a252f;
+    min-width: 90px;
+}
+
+/* Filas del cuerpo */
+.tabla-resumen-anual tbody tr {
+    border-bottom: 1px solid rgba(128,128,128,0.12);
+    transition: background 0.15s;
+}
+
+.tabla-resumen-anual tbody tr:hover {
+    background: rgba(64, 132, 210, 0.06);
+}
+
+.tabla-resumen-anual td {
+    padding: 10px 14px;
+    text-align: center;
+    color: var(--color-texto);
+    border-right: 1px solid rgba(128,128,128,0.08);
+}
+
+.tabla-resumen-anual td.col-nombre {
+    text-align: left;
+    padding-left: 16px;
+    font-weight: 500;
+}
+
+.tabla-resumen-anual td.col-num {
+    font-weight: 700;
+    color: var(--color-texto-secundario);
+    font-size: 0.85rem;
+}
+
+/* Celda de mes vacía */
+.tabla-resumen-anual td.mes-vacio {
+    color: rgba(128,128,128,0.35);
+    font-size: 0.75rem;
+}
+
+/* Colores semáforo para porcentajes */
+/* Porcentajes resumen anual: negro por defecto, rojo si reprueba (<80%) */
+.tabla-resumen-anual td.pct-alto,
+.tabla-resumen-anual td.col-promedio.pct-alto,
+.tabla-resumen-anual tr.fila-promedio-grupal td.pct-alto {
+    color: #1a1a1a;
+    font-weight: 600;
+}
+
+.tabla-resumen-anual td.pct-bajo,
+.tabla-resumen-anual td.col-promedio.pct-bajo,
+.tabla-resumen-anual tr.fila-promedio-grupal td.pct-bajo {
+    color: #E53935;
+    font-weight: 700;
+}
+
+/* Columna de promedio final */
+.tabla-resumen-anual td.col-promedio {
+    font-weight: 800;
+    font-size: 0.95rem;
+    background: rgba(64,132,210,0.05);
+}
+
+.tabla-resumen-anual th.col-promedio-header,
+.tabla-resumen-anual td.col-promedio {
+    border-left: 2px solid rgba(64,132,210,0.25);
+}
+
+/* Fila de promedio grupal al final */
+.tabla-resumen-anual tr.fila-promedio-grupal {
+    background: rgba(64,132,210,0.08);
+    border-top: 2px solid rgba(64,132,210,0.25);
+}
+
+.tabla-resumen-anual tr.fila-promedio-grupal td {
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: var(--color-texto);
+}
+
+.tabla-resumen-anual tr.fila-promedio-grupal td.col-nombre {
+    color: #4084d2;
+    font-size: 0.85rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+/* Dark mode */
+body.dark-mode .resumen-anual-tabla-wrap {
+    box-shadow: 0 2px 12px rgba(0,0,0,0.30);
+}
+
+/* Porcentajes resumen anual dark mode */
+body.dark-mode .tabla-resumen-anual td.pct-alto,
+body.dark-mode .tabla-resumen-anual td.col-promedio.pct-alto,
+body.dark-mode .tabla-resumen-anual tr.fila-promedio-grupal td.pct-alto {
+    color: #ffffff;
+}
+
+body.dark-mode .tabla-resumen-anual td.pct-bajo,
+body.dark-mode .tabla-resumen-anual td.col-promedio.pct-bajo,
+body.dark-mode .tabla-resumen-anual tr.fila-promedio-grupal td.pct-bajo {
+    color: #EF9A9A;
+}
+
+body.dark-mode .tabla-resumen-anual tbody tr:hover {
+    background: rgba(100,160,220,0.08);
+}
+
+body.dark-mode .tabla-resumen-anual td.col-promedio {
+    background: rgba(100,160,220,0.07);
+}
+
+body.dark-mode .tabla-resumen-anual tr.fila-promedio-grupal {
+    background: rgba(100,160,220,0.10);
+}
+@media (max-width: 768px) {
+    .vista-resumen-anual {
+        padding: 12px;
+    }
+    .tabla-resumen-anual th,
+    .tabla-resumen-anual td {
+        padding: 8px 8px;
+        font-size: 0.8rem;
+    }
+}
+
+
 th.header-dia {
     background-color: #64B5F6;
     color: white;
@@ -1928,6 +2183,10 @@ th.header-porcentaje-asistencia {
     font-weight: bold;
     font-size: 1.1rem;
     color: #FFB74D;
+}
+
+.celda-porcentaje-asistencia.pct-reprobado {
+    color: #E53935;
 }
 
 body.dark-mode .filtros-asistencia {
