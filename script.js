@@ -381,6 +381,7 @@ function inicializarEventos() {
     elementos.btnGuardarRegistro.addEventListener('click', guardarTodoElRegistro);
     elementos.btnGuardarActividades.addEventListener('click', guardarTodasLasActividades);
     document.getElementById('btnExportarPDFActividades').addEventListener('click', exportarReporteActividades);
+    document.getElementById('btnExportarExcelCalificaciones').addEventListener('click', exportarExcelCalificaciones);
     
     // Modo oscuro
     const btnModoOscuro = document.getElementById('btnModoOscuro');
@@ -4456,6 +4457,234 @@ async function cargarLogoComoDataURL(ruta) {
 
 // EXPORTAR REPORTE PDF - CALIFICACIONES
 // ==========================================
+
+function exportarExcelCalificaciones() {
+    if (!state.moduloSeleccionado || state.ras.length === 0 || state.estudiantes.length === 0) {
+        mostrarMensajeError('Sin datos', 'Seleccione un módulo con calificaciones antes de exportar.');
+        return;
+    }
+    if (typeof XLSX === 'undefined') {
+        mostrarMensajeError('Librería no disponible', 'SheetJS no está cargado. Verifica tu conexión a internet.');
+        return;
+    }
+
+    const btn = document.getElementById('btnExportarExcelCalificaciones');
+    btn.disabled = true;
+    btn.textContent = '⏳ Generando...';
+
+    try {
+        const moduloActual = state.modulos.find(m => m.id == state.moduloSeleccionado);
+        const nombreModulo = moduloActual ? moduloActual.nombre : 'Módulo';
+        const curso        = state.cursoSeleccionado || '';
+        const fecha        = new Date().toLocaleDateString('es-DO', { day: '2-digit', month: 'long', year: 'numeric' });
+        const anioEscolar  = (() => { const h = new Date(), a = h.getFullYear(); return h.getMonth() >= 8 ? a+'-'+(a+1) : (a-1)+'-'+a; })();
+
+        // ── Leer valores desde el DOM ─────────────────────────────────────────
+        const valoresDom = {};
+        document.querySelectorAll('.input-oportunidad-simple').forEach(input => {
+            const key = input.dataset.estudiante + '_' + input.dataset.ra;
+            if (!valoresDom[key]) valoresDom[key] = { op1:'', op2:'', op3:'' };
+            valoresDom[key]['op' + input.dataset.oportunidad] = input.value !== '' ? input.value : '';
+        });
+        const getVal = (estId, raId, op) => {
+            const key = estId + '_' + raId;
+            if (valoresDom[key] && valoresDom[key]['op'+op] !== undefined) return valoresDom[key]['op'+op];
+            const cal = obtenerCalificacion(estId, raId);
+            const v = cal['op'+op];
+            return (v !== null && v !== undefined) ? String(v) : '';
+        };
+
+        // ── Paleta de colores ─────────────────────────────────────────────────
+        const C = {
+            HEAD1:   '1E5AA0', HEAD1_FG: 'FFFFFF',   // encabezado RA — azul oscuro
+            HEAD2A:  '1E1E1E', HEAD2A_FG: 'FFFFFF',  // sub-fila Valor — negro
+            HEAD2B:  '445566', HEAD2B_FG: 'FFFFFF',  // sub-fila Min — gris
+            TOTAL_H: '142F78', TOTAL_H_FG: 'FFFFFF', // encabezado Total
+            APRO:    'C8E6C9', APRO_FG: '1B5E20',    // aprobado — verde
+            REPR:    'FFCDD2', REPR_FG: 'B71C1C',    // reprobado — rojo
+            TOTAL_A: 'A5D6A7', TOTAL_A_FG: '1B5E20', // total aprobado
+            TOTAL_R: 'EF9A9A', TOTAL_R_FG: 'B71C1C', // total reprobado
+            GRUPO:   'BBDEFB', GRUPO_FG: '0D2E6E',   // promedio grupo
+            ALT:     'F0F4FF',                        // filas alternas
+            EMPTY:   'FAFAFA', EMPTY_FG: 'AAAAAA',   // celda vacía
+        };
+
+        const fill  = c  => ({ type:'pattern', pattern:'solid', fgColor:{ rgb: c } });
+        const font  = (b, c) => ({ bold: b, name: 'Arial', sz: 10, color: { rgb: c || '1A1A1A' } });
+        const fontSm= (b, c) => ({ bold: b, name: 'Arial', sz: 9,  color: { rgb: c || '1A1A1A' } });
+        const aln   = (h, v) => ({ horizontal: h, vertical: v || 'center', wrapText: false });
+        const bdr   = (style, color) => ({ style: style || 'thin', color: { rgb: color || 'B0BEC5' } });
+        const border = (s) => ({ top: bdr(s), bottom: bdr(s), left: bdr(s), right: bdr(s) });
+        const borderStrong = () => ({ top: bdr('medium','1E5AA0'), bottom: bdr('medium','1E5AA0'), left: bdr('medium','1E5AA0'), right: bdr('medium','1E5AA0') });
+
+        const mkCell = (v, isBold, fg, bg, halign, strong, small) => ({
+            v: v, t: (typeof v === 'number') ? 'n' : 's',
+            s: {
+                font:      small ? fontSm(isBold, fg) : font(isBold, fg),
+                fill:      fill(bg || 'FFFFFF'),
+                alignment: aln(halign || 'center'),
+                border:    strong ? borderStrong() : border()
+            }
+        });
+        const empty = (bg) => mkCell('', false, 'FFFFFF', bg || 'FFFFFF', 'center');
+
+        // ── Construir hoja ────────────────────────────────────────────────────
+        const ws = {};
+        const numRAs = state.ras.length;
+        // Columnas: # | Nombre | [Op1 Op2 Op3] × RAs | Total
+        // Fila 0 = encabezado RA (ra.codigo ocupa 3 cols), fila 1 = Valor/Min
+        // Filas 2..N+1 = estudiantes, fila N+2 = promedio grupo
+
+        const COL_NUM   = 0;
+        const COL_NOMBRE= 1;
+        const COL_TOTAL = 2 + numRAs * 3;
+        const totalRows = 2 + state.estudiantes.length + 1; // 2 header + N + promedio
+
+        const range = { s:{ r:0, c:0 }, e:{ r: totalRows - 1, c: COL_TOTAL } };
+
+        // ── Fila 0: # | Nombre | RA.codigo (x3) × N | Total ──────────────────
+        ws[XLSX.utils.encode_cell({ r:0, c:COL_NUM   })] = mkCell('#',       true, C.HEAD1_FG, C.HEAD1, 'center', false);
+        ws[XLSX.utils.encode_cell({ r:0, c:COL_NOMBRE})] = mkCell('Nombre',  true, C.HEAD1_FG, C.HEAD1, 'left',   false);
+        ws[XLSX.utils.encode_cell({ r:0, c:COL_TOTAL })] = mkCell('Total',   true, C.TOTAL_H_FG, C.TOTAL_H, 'center', true);
+
+        state.ras.forEach((ra, ri) => {
+            const c0 = 2 + ri * 3;
+            ws[XLSX.utils.encode_cell({ r:0, c:c0 })] = mkCell(ra.codigo, true, C.HEAD1_FG, C.HEAD1, 'center');
+            // Op2 and Op3 merge visually via same style (no native merge in SheetJS community)
+            ws[XLSX.utils.encode_cell({ r:0, c:c0+1 })] = empty(C.HEAD1);
+            ws[XLSX.utils.encode_cell({ r:0, c:c0+2 })] = empty(C.HEAD1);
+        });
+
+        // ── Fila 1: blank | blank | [Valor/Valor/Min(70%)] × N | blank ────────
+        ws[XLSX.utils.encode_cell({ r:1, c:COL_NUM   })] = empty(C.HEAD1);
+        ws[XLSX.utils.encode_cell({ r:1, c:COL_NOMBRE})] = empty(C.HEAD1);
+        ws[XLSX.utils.encode_cell({ r:1, c:COL_TOTAL })] = empty(C.TOTAL_H);
+
+        state.ras.forEach((ra, ri) => {
+            const c0  = 2 + ri * 3;
+            const min = Math.round((ra.valorTotal || 0) * 70 / 100);
+            ws[XLSX.utils.encode_cell({ r:1, c:c0   })] = mkCell('Op.1',        true, C.HEAD2A_FG, C.HEAD2A, 'center', false, true);
+            ws[XLSX.utils.encode_cell({ r:1, c:c0+1 })] = mkCell('Op.2 / Valor:' + (ra.valorTotal||0), true, C.HEAD2A_FG, C.HEAD2A, 'center', false, true);
+            ws[XLSX.utils.encode_cell({ r:1, c:c0+2 })] = mkCell('Op.3 / Min:'+min,  true, C.HEAD2B_FG, C.HEAD2B, 'center', false, true);
+        });
+
+        // ── Filas de estudiantes ──────────────────────────────────────────────
+        state.estudiantes.forEach((est, idx) => {
+            const r    = idx + 2;
+            const isAlt = idx % 2 === 1;
+
+            ws[XLSX.utils.encode_cell({ r, c:COL_NUM    })] = mkCell(idx + 1, true, '1A1A1A', isAlt ? C.ALT : 'FFFFFF', 'center');
+            ws[XLSX.utils.encode_cell({ r, c:COL_NOMBRE })] = mkCell(est.nombre, false, '1A1A1A', isAlt ? C.ALT : 'FFFFFF', 'left');
+
+            let total = 0;
+            state.ras.forEach((ra, ri) => {
+                const c0  = 2 + ri * 3;
+                const min = Math.round((ra.valorTotal || 0) * 70 / 100);
+                const v1  = getVal(est.id, ra.id, 1);
+                const v2  = getVal(est.id, ra.id, 2);
+                const v3  = getVal(est.id, ra.id, 3);
+
+                const valorFinal = v3 !== '' ? Number(v3) : v2 !== '' ? Number(v2) : v1 !== '' ? Number(v1) : 0;
+                total += valorFinal;
+
+                const styleOp = (v) => {
+                    if (v === '') return { bg: isAlt ? C.ALT : 'FFFFFF', fg: C.EMPTY_FG };
+                    return Number(v) >= min ? { bg: C.APRO, fg: C.APRO_FG } : { bg: C.REPR, fg: C.REPR_FG };
+                };
+
+                [v1, v2, v3].forEach((v, oi) => {
+                    const st = styleOp(v);
+                    const val = v !== '' ? Number(v) : '';
+                    ws[XLSX.utils.encode_cell({ r, c: c0+oi })] = mkCell(val === '' ? '—' : val, false, st.fg, st.bg, 'center');
+                });
+            });
+
+            const totalPosible = state.ras.reduce((s, ra) => s + (ra.valorTotal || 0), 0);
+            const aprobado     = totalPosible > 0 && total >= totalPosible * 0.7;
+            ws[XLSX.utils.encode_cell({ r, c: COL_TOTAL })] = mkCell(
+                total, true,
+                aprobado ? C.TOTAL_A_FG : C.TOTAL_R_FG,
+                aprobado ? C.TOTAL_A    : C.TOTAL_R,
+                'center', true
+            );
+        });
+
+        // ── Fila de promedio grupo ─────────────────────────────────────────────
+        const rGrupo = 2 + state.estudiantes.length;
+        ws[XLSX.utils.encode_cell({ r:rGrupo, c:COL_NUM    })] = empty(C.GRUPO);
+        ws[XLSX.utils.encode_cell({ r:rGrupo, c:COL_NOMBRE })] = mkCell('Promedio del grupo', true, C.GRUPO_FG, C.GRUPO, 'left');
+
+        let totalPromedios = 0;
+        state.ras.forEach((ra, ri) => {
+            const c0 = 2 + ri * 3;
+            [1,2,3].forEach((op, oi) => {
+                const vals = state.estudiantes.map(e => getVal(e.id, ra.id, op)).filter(v => v !== '').map(Number);
+                const prom = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+                ws[XLSX.utils.encode_cell({ r:rGrupo, c:c0+oi })] = mkCell(
+                    prom !== null ? parseFloat(prom.toFixed(1)) : '—',
+                    true, C.GRUPO_FG, C.GRUPO, 'center'
+                );
+                if (op === 3 && prom !== null) totalPromedios += prom;
+            });
+        });
+        ws[XLSX.utils.encode_cell({ r:rGrupo, c:COL_TOTAL })] = mkCell(
+            parseFloat(totalPromedios.toFixed(1)), true, C.GRUPO_FG, C.GRUPO, 'center', true
+        );
+
+        ws['!ref'] = XLSX.utils.encode_range(range);
+
+        // ── Anchos de columna ─────────────────────────────────────────────────
+        const cols = [{ wch:5 }, { wch:32 }];
+        state.ras.forEach(() => cols.push({ wch:10 }, { wch:14 }, { wch:10 }));
+        cols.push({ wch:10 });
+        ws['!cols'] = cols;
+
+        // ── Altura de filas ───────────────────────────────────────────────────
+        ws['!rows'] = [{ hpt:22 }, { hpt:18 }];
+
+        // ── Hoja de información ───────────────────────────────────────────────
+        const wsInfo = {};
+        const infoData = [
+            ['REPORTE DE CALIFICACIONES'],
+            [''],
+            ['Módulo:',      nombreModulo],
+            ['Curso:',       curso],
+            ['Año escolar:', anioEscolar],
+            ['Fecha:',       fecha],
+            ['Sistema:',     'SCJP — Politécnico Nuestra Señora de la Altagracia'],
+        ];
+        infoData.forEach((row, r) => {
+            row.forEach((v, c) => {
+                const addr = XLSX.utils.encode_cell({ r, c });
+                if (r === 0) {
+                    wsInfo[addr] = { v, t:'s', s:{ font: font(true,'1E5AA0'), alignment: aln('left') } };
+                } else {
+                    wsInfo[addr] = { v, t:'s', s:{ font: font(c===0, c===0?'1E5AA0':'1A1A1A'), alignment: aln('left') } };
+                }
+            });
+        });
+        wsInfo['!ref'] = XLSX.utils.encode_range({ s:{r:0,c:0}, e:{r:infoData.length,c:2} });
+        wsInfo['!cols'] = [{ wch:16 }, { wch:40 }];
+
+        // ── Workbook ──────────────────────────────────────────────────────────
+        const wb = XLSX.utils.book_new();
+        wb.Props = { Title:'Reporte de Calificaciones', Author:'SCJP — Politécnico NSA', CreatedDate: new Date() };
+        XLSX.utils.book_append_sheet(wb, ws, 'Calificaciones');
+        XLSX.utils.book_append_sheet(wb, wsInfo, 'Info');
+
+        const nombreArchivo = 'Calificaciones_' + (nombreModulo||'Modulo').replace(/\s+/g,'_') + '_' + curso + '_' + new Date().toISOString().slice(0,10) + '.xlsx';
+        XLSX.writeFile(wb, nombreArchivo);
+
+        btn.textContent = '✅ Exportado';
+        setTimeout(() => { btn.textContent = '📊 Exportar Excel'; btn.disabled = false; }, 2000);
+
+    } catch (err) {
+        console.error('Error exportando Excel calificaciones:', err);
+        mostrarMensajeError('Error al exportar', 'No se pudo generar el archivo Excel.');
+        btn.textContent = '📊 Exportar Excel';
+        btn.disabled = false;
+    }
+}
 
 async function exportarReporteCalificaciones() {
     // Validar que hay datos cargados
