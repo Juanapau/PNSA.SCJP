@@ -2021,6 +2021,7 @@ function inicializarEventosAsistencia() {
     // Resumen anual: navega a vista independiente
     document.getElementById('btnResumenAnual').addEventListener('click', abrirVistaResumenAnual);
     document.getElementById('btnVolverDesdeResumen').addEventListener('click', volverDesdeResumenAnual);
+    document.getElementById('btnExportarExcelResumen').addEventListener('click', exportarExcelResumenAnual);
 }
 
 /* DESHABILITADO - Acceso a asistencia solo desde menú
@@ -2434,6 +2435,154 @@ function abrirVistaResumenAnual() {
     document.getElementById('resumenAnualTablaWrap').style.display = 'none';
 
     construirTablaResumenAnual(modulo, curso);
+}
+
+function exportarExcelResumenAnual() {
+    const tabla = document.getElementById('tablaResumenAnual');
+    if (!tabla || !tabla.querySelector('tbody tr')) {
+        mostrarMensajeError('Sin datos', 'Primero carga el resumen anual antes de exportar.');
+        return;
+    }
+
+    const btn = document.getElementById('btnExportarExcelResumen');
+    btn.disabled = true;
+    btn.textContent = '⏳ Generando...';
+
+    try {
+        // ── Colores ──────────────────────────────────────────────────────────
+        const COLOR_HEADER_BG  = '2C3E50';   // Encabezado oscuro
+        const COLOR_HEADER_FG  = 'FFFFFF';
+        const COLOR_PROMEDIO_BG = '1A252F';  // Columna promedio final (encabezado)
+        const COLOR_ALTO_BG    = 'E8F5E9';   // Verde claro fila aprobado
+        const COLOR_ALTO_FG    = '1A1A1A';
+        const COLOR_BAJO_BG    = 'FFEBEE';   // Rojo claro fila reprobado
+        const COLOR_BAJO_FG    = 'C62828';
+        const COLOR_GRUPO_BG   = 'D0E4F7';   // Fila promedio grupo
+        const COLOR_GRUPO_FG   = '1A3A6B';
+        const COLOR_ALT_BG     = 'F0F4FF';   // Filas alternas
+        const COLOR_PROMCOL_BG = 'DDEEFF';   // Columna promedio final (cuerpo)
+
+        const mkFont  = (bold, color) => ({ bold, color: { rgb: color } });
+        const mkFill  = (color) => ({ type: 'pattern', pattern: 'solid', fgColor: { rgb: color } });
+        const mkAlign = (h, v) => ({ horizontal: h, vertical: v, wrapText: false });
+        const mkBorder = () => ({
+            top:    { style: 'thin', color: { rgb: 'B0B8C8' } },
+            bottom: { style: 'thin', color: { rgb: 'B0B8C8' } },
+            left:   { style: 'thin', color: { rgb: 'B0B8C8' } },
+            right:  { style: 'thin', color: { rgb: 'B0B8C8' } }
+        });
+        const mkBorderStrong = () => ({
+            top:    { style: 'medium', color: { rgb: '4084D2' } },
+            bottom: { style: 'medium', color: { rgb: '4084D2' } },
+            left:   { style: 'medium', color: { rgb: '4084D2' } },
+            right:  { style: 'medium', color: { rgb: '4084D2' } }
+        });
+
+        const cell = (v, bold, fgColor, bgColor, halign, strong) => ({
+            v, t: typeof v === 'number' ? 'n' : 's',
+            s: {
+                font:      mkFont(bold || false, fgColor || '1A1A1A'),
+                fill:      mkFill(bgColor || 'FFFFFF'),
+                alignment: mkAlign(halign || 'center', 'middle'),
+                border:    strong ? mkBorderStrong() : mkBorder()
+            }
+        });
+
+        // ── Leer encabezados desde el thead ──────────────────────────────────
+        const ths = Array.from(tabla.querySelectorAll('thead th'));
+        const colCount = ths.length;
+        const headers  = ths.map(th => th.textContent.replace(/\s+/g, ' ').trim());
+
+        // ── Leer filas del tbody ──────────────────────────────────────────────
+        const trs = Array.from(tabla.querySelectorAll('tbody tr'));
+
+        const ws = {};
+        const range = { s: { r: 0, c: 0 }, e: { r: trs.length, c: colCount - 1 } };
+
+        // Fila 0: encabezado
+        headers.forEach((h, ci) => {
+            const isPromedio = ci === colCount - 1;
+            const addr = XLSX.utils.encode_cell({ r: 0, c: ci });
+            ws[addr] = cell(h, true, COLOR_HEADER_FG,
+                isPromedio ? COLOR_PROMEDIO_BG : COLOR_HEADER_BG,
+                ci <= 1 ? 'left' : 'center', isPromedio);
+        });
+
+        // Filas de datos
+        trs.forEach((tr, ri) => {
+            const isGrupal = tr.classList.contains('fila-promedio-grupal');
+            const tds = Array.from(tr.querySelectorAll('td'));
+            const isAlt = (ri % 2 === 1) && !isGrupal;
+
+            tds.forEach((td, ci) => {
+                const raw   = td.textContent.trim();
+                const isNum = raw !== '—' && raw !== '' && !isNaN(parseFloat(raw.replace('%', '')));
+                const num   = isNum ? parseFloat(raw.replace('%', '')) : null;
+                const isPromCol = ci === colCount - 1;
+                const isBajo   = td.classList.contains('pct-bajo');
+                const isAlto   = td.classList.contains('pct-alto');
+
+                let bgColor = isGrupal ? COLOR_GRUPO_BG : isAlt ? COLOR_ALT_BG : 'FFFFFF';
+                let fgColor = isGrupal ? COLOR_GRUPO_FG : COLOR_ALTO_FG;
+                let bold    = isGrupal || isPromCol;
+
+                if (isBajo)  { fgColor = COLOR_BAJO_FG;  bgColor = isGrupal ? COLOR_GRUPO_BG : COLOR_BAJO_BG; }
+                if (isAlto && !isGrupal) { bgColor = COLOR_ALTO_BG; }
+                if (isPromCol && !isGrupal) bgColor = COLOR_PROMCOL_BG;
+
+                const val  = num !== null ? num : raw;
+                const halign = ci <= 1 ? 'left' : 'center';
+                const addr = XLSX.utils.encode_cell({ r: ri + 1, c: ci });
+                ws[addr] = cell(val, bold, fgColor, bgColor, halign, isPromCol);
+            });
+        });
+
+        ws['!ref'] = XLSX.utils.encode_range(range);
+
+        // ── Anchos de columna ─────────────────────────────────────────────────
+        ws['!cols'] = headers.map((_, ci) => {
+            if (ci === 0) return { wch: 5 };
+            if (ci === 1) return { wch: 30 };
+            if (ci === colCount - 1) return { wch: 14 };
+            return { wch: 10 };
+        });
+
+        // ── Altura de filas ───────────────────────────────────────────────────
+        ws['!rows'] = [{ hpt: 22 }];  // encabezado más alto
+
+        // ── Info del reporte ──────────────────────────────────────────────────
+        const info = document.getElementById('resumenAnualInfo').textContent.trim();
+        const moduloActual = (state && state.modulos)
+            ? (state.modulos.find(m => m.id == asistenciaState.moduloSeleccionado) || {}).nombre || ''
+            : '';
+        const curso = asistenciaState.cursoSeleccionado || '';
+
+        const wb = XLSX.utils.book_new();
+        wb.Props = {
+            Title:   'Resumen Anual de Asistencia',
+            Subject: `${moduloActual} · ${curso}`,
+            Author:  'Sistema de Calificaciones JP — Politécnico NSA',
+            CreatedDate: new Date()
+        };
+
+        XLSX.utils.book_append_sheet(wb, ws, 'Resumen Asistencia');
+
+        const fecha = new Date().toISOString().slice(0, 10);
+        const nombreArchivo = `Asistencia_Anual_${(moduloActual || 'Modulo').replace(/\s+/g, '_')}_${curso}_${fecha}.xlsx`;
+        XLSX.writeFile(wb, nombreArchivo);
+
+        btn.textContent = '✅ Exportado';
+        setTimeout(() => {
+            btn.textContent = '📊 Exportar Excel';
+            btn.disabled = false;
+        }, 2000);
+
+    } catch (err) {
+        console.error('Error exportando Excel:', err);
+        mostrarMensajeError('Error al exportar', 'No se pudo generar el archivo Excel.');
+        btn.textContent = '📊 Exportar Excel';
+        btn.disabled = false;
+    }
 }
 
 function volverDesdeResumenAnual() {
