@@ -317,6 +317,43 @@ body.dark-mode .btn-exportar-pdf-actividades:hover {
     background-color: #1B5E20;
 }
 
+/* Botón Exportar Excel — Calificaciones (verde) */
+.btn-exportar-excel-cal {
+    background-color: #43A047;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 6px rgba(67, 160, 71, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.btn-exportar-excel-cal:hover {
+    background-color: #388E3C;
+    box-shadow: 0 4px 10px rgba(67, 160, 71, 0.4);
+}
+
+.btn-exportar-excel-cal:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+body.dark-mode .btn-exportar-excel-cal {
+    background-color: #2E7D32;
+    box-shadow: 0 2px 6px rgba(46, 125, 50, 0.4);
+}
+
+body.dark-mode .btn-exportar-excel-cal:hover {
+    background-color: #1B5E20;
+}
+
 .btn-guardar {
     background-color: #42A5F5;
     color: white;
@@ -344,6 +381,7 @@ body.dark-mode .btn-exportar-pdf-actividades:hover {
 /* En móvil los botones dentro de btns-tabla-acciones nunca se apilan ni se estiran */
 .btns-tabla-acciones .btn-guardar,
 .btns-tabla-acciones .btn-exportar-pdf,
+.btns-tabla-acciones .btn-exportar-excel-cal,
 .botones-asistencia .btn-guardar,
 .botones-asistencia .btn-volver-asistencia,
 .botones-asistencia .btn-exportar-excel-resumen,
