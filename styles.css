@@ -3222,7 +3222,7 @@ body.dark-mode .filtros-actividades-compactos .filtro-compacto:nth-child(3) sele
 /* Contenedor de filtros de asistencia */
 .filtros-asistencia-compactos {
     display: grid;
-    grid-template-columns: minmax(100px, 130px) 1fr minmax(100px, 130px) auto;
+    grid-template-columns: 1fr 1.4fr 1fr auto;
     gap: 15px;
     margin-bottom: 20px;
     align-items: end;
