@@ -3222,9 +3222,10 @@ body.dark-mode .filtros-actividades-compactos .filtro-compacto:nth-child(3) sele
 /* Contenedor de filtros de asistencia */
 .filtros-asistencia-compactos {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: minmax(100px, 130px) 1fr minmax(100px, 130px) auto;
     gap: 15px;
     margin-bottom: 20px;
+    align-items: end;
 }
 
 /* Orden correcto: Módulo (verde), Curso (azul), Mes (amarillo) */
@@ -3401,6 +3402,9 @@ body.dark-mode .filtros-asistencia-compactos .filtro-compacto:nth-child(3) input
 @media (max-width: 768px) {
     .filtros-asistencia-compactos {
         grid-template-columns: 1fr;
+    }
+    .filtro-dias-semana {
+        flex: 1 1 100% !important;
     }
 }
 
@@ -4831,15 +4835,11 @@ body.dark-mode .mensaje-confirmacion {
 
 /* ── Selector de días de la semana (asistencia) ─────────────────────────── */
 .filtro-dias-semana {
-    flex: 3 1 180px !important;
+    flex: 0 0 auto !important;
+    min-width: 0;
 }
 
-/* Curso y Mes más angostos en asistencia para que todo quepa en una fila */
-.filtros-asistencia-compactos .filtro-compacto:not(.filtro-dias-semana) {
-    flex: 1 1 0 !important;
-    min-width: 90px;
-    max-width: 160px;
-}
+
 
 .dias-semana-checks {
     display: flex;
