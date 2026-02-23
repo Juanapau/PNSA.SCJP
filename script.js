@@ -2006,6 +2006,25 @@ const asistenciaElementos = {
     btnVolver: document.getElementById('btnVolverDesdeAsistencia')
 };
 
+
+// ── Persistencia de días de clase en localStorage ────────────────────────────
+function guardarDiasSemanaLocal(moduloId, dias) {
+    if (!moduloId) return;
+    localStorage.setItem('diasSemana_modulo_' + moduloId, JSON.stringify(dias));
+}
+
+function cargarDiasSemanaLocal(moduloId) {
+    if (!moduloId) return null;
+    const saved = localStorage.getItem('diasSemana_modulo_' + moduloId);
+    if (!saved) return null;
+    try { return JSON.parse(saved); } catch(e) { return null; }
+}
+
+function aplicarDiasSemanaUI(dias) {
+    document.querySelectorAll('.cb-dia-semana').forEach(cb => {
+        cb.checked = dias.includes(parseInt(cb.value));
+    });
+}
 function inicializarEventosAsistencia() {
     elementos.selectRA.addEventListener('change', function(e) {
         if (e.target.value === 'asistencia') {
@@ -2024,6 +2043,7 @@ function inicializarEventosAsistencia() {
             const marcados = document.querySelectorAll('.cb-dia-semana:checked');
             if (marcados.length === 0) { this.checked = true; return; }
             asistenciaState.diasSemana = Array.from(marcados).map(c => parseInt(c.value));
+            guardarDiasSemanaLocal(asistenciaState.moduloSeleccionado, asistenciaState.diasSemana);
             if (asistenciaState.mesSeleccionado && asistenciaState.estudiantes.length > 0) {
                 ControlCambios.marcarCambio();
                 generarTablaAsistencia();
@@ -2092,6 +2112,16 @@ async function manejarCambioModuloAsistencia(e) {
         return;
     }
     asistenciaState.moduloSeleccionado = moduloId;
+    // Restaurar días de clase guardados para este módulo
+    const diasGuardados = cargarDiasSemanaLocal(moduloId);
+    if (diasGuardados && diasGuardados.length > 0) {
+        asistenciaState.diasSemana = diasGuardados;
+        aplicarDiasSemanaUI(diasGuardados);
+    } else {
+        // Si no hay configuración guardada, restaurar todos los días
+        asistenciaState.diasSemana = [1, 2, 3, 4, 5];
+        aplicarDiasSemanaUI([1, 2, 3, 4, 5]);
+    }
     verificarYCargarAsistencia();
 }
 
