@@ -4831,7 +4831,14 @@ body.dark-mode .mensaje-confirmacion {
 
 /* ── Selector de días de la semana (asistencia) ─────────────────────────── */
 .filtro-dias-semana {
-    flex: 2 1 220px !important;
+    flex: 3 1 180px !important;
+}
+
+/* Curso y Mes más angostos en asistencia para que todo quepa en una fila */
+.filtros-asistencia-compactos .filtro-compacto:not(.filtro-dias-semana) {
+    flex: 1 1 0 !important;
+    min-width: 90px;
+    max-width: 160px;
 }
 
 .dias-semana-checks {
