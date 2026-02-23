@@ -2401,6 +2401,43 @@ body.dark-mode .filtro-tarjeta input[type="month"]:hover {
     box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
 }
 
+/* Botón Exportar Excel — resumen anual */
+.btn-exportar-excel-resumen {
+    background-color: #1976D2;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 6px rgba(25, 118, 210, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.btn-exportar-excel-resumen:hover {
+    background-color: #1565C0;
+    box-shadow: 0 4px 10px rgba(25, 118, 210, 0.4);
+}
+
+.btn-exportar-excel-resumen:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+body.dark-mode .btn-exportar-excel-resumen {
+    background-color: #1565C0;
+    box-shadow: 0 2px 6px rgba(21, 101, 192, 0.4);
+}
+
+body.dark-mode .btn-exportar-excel-resumen:hover {
+    background-color: #0D47A1;
+}
+
 /* ==========================================
    MENÚ LATERAL DESLIZANTE
    ========================================== */
