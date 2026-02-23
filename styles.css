@@ -346,6 +346,7 @@ body.dark-mode .btn-exportar-pdf-actividades:hover {
 .btns-tabla-acciones .btn-exportar-pdf,
 .botones-asistencia .btn-guardar,
 .botones-asistencia .btn-volver-asistencia,
+.botones-asistencia .btn-exportar-excel-resumen,
 .botones-actividades-grupo .btn-guardar,
 .botones-actividades-grupo .btn-exportar-pdf-actividades {
     width: auto !important;
@@ -2406,7 +2407,8 @@ body.dark-mode .filtro-tarjeta input[type="month"]:hover {
     background-color: #1976D2;
     color: white;
     border: none;
-    padding: 12px 24px;
+    padding: 0 24px;
+    align-self: stretch;
     border-radius: 8px;
     font-size: 1rem;
     font-weight: 600;
