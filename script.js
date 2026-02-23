@@ -1991,7 +1991,8 @@ const asistenciaState = {
     mesSeleccionado: null,
     estudiantes: [],
     asistencias: [],
-    diasDelMes: []
+    diasDelMes: [],
+    diasSemana: [1, 2, 3, 4, 5]   // 1=lun … 5=vie (getDay values)
 };
 
 const asistenciaElementos = {
@@ -2016,6 +2017,19 @@ function inicializarEventosAsistencia() {
     asistenciaElementos.selectCurso.addEventListener('change', manejarCambioCursoAsistencia);
     asistenciaElementos.selectMes.addEventListener('change', manejarCambioMesAsistencia);
     asistenciaElementos.selectMes.addEventListener('input', manejarCambioMesAsistencia);
+
+    // Días de la semana: actualizar state y regenerar tabla
+    document.querySelectorAll('.cb-dia-semana').forEach(cb => {
+        cb.addEventListener('change', function() {
+            const marcados = document.querySelectorAll('.cb-dia-semana:checked');
+            if (marcados.length === 0) { this.checked = true; return; }
+            asistenciaState.diasSemana = Array.from(marcados).map(c => parseInt(c.value));
+            if (asistenciaState.mesSeleccionado && asistenciaState.estudiantes.length > 0) {
+                ControlCambios.marcarCambio();
+                generarTablaAsistencia();
+            }
+        });
+    });
     asistenciaElementos.btnVolver.addEventListener('click', volverDesdeAsistencia);
     asistenciaElementos.btnGuardar.addEventListener('click', guardarAsistencia);
 
@@ -2156,15 +2170,14 @@ async function cargarAsistenciasMes(moduloId, curso, mes) {
     }
 }
 
-function generarDiasLaborables(mes) {
+function generarDiasLaborables(mes, diasSemana) {
     const [year, month] = mes.split('-');
-    const primerDia = new Date(year, parseInt(month) - 1, 1);
     const ultimoDia = new Date(year, parseInt(month), 0);
+    const filtro = diasSemana && diasSemana.length > 0 ? diasSemana : [1, 2, 3, 4, 5];
     const dias = [];
     for (let dia = 1; dia <= ultimoDia.getDate(); dia++) {
-        const fecha = new Date(year, parseInt(month) - 1, dia);
-        const diaSemana = fecha.getDay();
-        if (diaSemana !== 0 && diaSemana !== 6) {
+        const diaSemana = new Date(year, parseInt(month) - 1, dia).getDay();
+        if (filtro.includes(diaSemana)) {
             dias.push(dia);
         }
     }
@@ -2181,7 +2194,7 @@ function generarTablaAsistencia() {
         asistenciaElementos.tablaBody.innerHTML = '';
         return;
     }
-    asistenciaState.diasDelMes = generarDiasLaborables(asistenciaState.mesSeleccionado);
+    asistenciaState.diasDelMes = generarDiasLaborables(asistenciaState.mesSeleccionado, asistenciaState.diasSemana);
     console.log('Días del mes:', asistenciaState.diasDelMes);
     let headerHTML = '<tr>';
     headerHTML += '<th class="header-numero">#</th>';
@@ -2371,7 +2384,8 @@ async function guardarAsistencia() {
                 curso: asistenciaState.cursoSeleccionado,
                 mes: asistenciaState.mesSeleccionado,
                 asistencias: asistenciaState.asistencias,
-                diasDelMes: asistenciaState.diasDelMes
+                diasDelMes: asistenciaState.diasDelMes,
+                diasSemana: asistenciaState.diasSemana
             })
         });
         const data = await response.json();
