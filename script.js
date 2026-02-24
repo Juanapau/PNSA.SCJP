@@ -2840,7 +2840,8 @@ const menuElementos = {
     textoModo: document.getElementById('textoModo'),
     menuCalif: document.getElementById('menuRegistroCalif'),
     menuAct: document.getElementById('menuRegistroAct'),
-    menuAsist: document.getElementById('menuRegistroAsist')
+    menuAsist: document.getElementById('menuRegistroAsist'),
+    menuHistorial: document.getElementById('menuHistorial')
 };
 
 function inicializarMenu() {
@@ -2904,7 +2905,7 @@ function actualizarTextoModo() {
 
 function actualizarMenuActivo() {
     // Remover active de todos
-    [menuElementos.menuCalif, menuElementos.menuAct, menuElementos.menuAsist].forEach(btn => {
+    [menuElementos.menuCalif, menuElementos.menuAct, menuElementos.menuAsist, menuElementos.menuHistorial].forEach(btn => {
         btn.classList.remove('active');
     });
     
@@ -2915,6 +2916,8 @@ function actualizarMenuActivo() {
         menuElementos.menuAct.classList.add('active');
     } else if (asistenciaElementos.vistaAsistencia.style.display !== 'none') {
         menuElementos.menuAsist.classList.add('active');
+    } else if (document.getElementById('vistaHistorial').style.display !== 'none') {
+        menuElementos.menuHistorial.classList.add('active');
     }
 }
 
@@ -5329,6 +5332,7 @@ function abrirHistorial() {
     document.getElementById('vistaActividades').style.display = 'none';
     document.getElementById('vistaAsistencia').style.display = 'none';
     document.getElementById('vistaHistorial').style.display = 'block';
+    actualizarMenuActivo();
 
     // Resetear estado e interfaz completamente
     historialState.anioSeleccionado  = null;
