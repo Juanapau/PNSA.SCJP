@@ -5584,6 +5584,7 @@ function renderHistorialCalificaciones() {
     });
     thead += '</tr>';
     document.getElementById('historialTablaCalifHead').innerHTML = thead;
+    configurarNavegacion('historialScrollCalif', 'scrollLeftHistorialCalif', 'scrollRightHistorialCalif');
 
     // Cuerpo
     let tbody = '';
@@ -5695,12 +5696,13 @@ function renderHistorialActividades() {
                 row += `<td class="${vMostrar !== null ? 'h-apro' : 'h-vacio'}">${vMostrar !== null ? vMostrar : '—'}</td>`;
             }
         });
-        const totalAct = total > 0 ? parseFloat(total.toFixed(2)) : '—';
-        row += `<td class="h-total-apro">${totalAct}</td></tr>`;
+        const totalAct = total > 0 ? Number(total.toFixed(2)) : '—';
+        row += `<td class="h-total-apro">${totalAct !== '—' ? totalAct.toFixed(2) : totalAct}</td></tr>`;
         tbody += row;
     });
 
     document.getElementById('historialTablaActBody').innerHTML = tbody;
+    configurarNavegacion('historialScrollAct', 'scrollLeftHistorialAct', 'scrollRightHistorialAct');
 }
 
 // ── Render Asistencia ─────────────────────────────────────────────────────────
@@ -5784,6 +5786,7 @@ function renderHistorialAsistencia() {
     tbody += filaGrupo;
 
     document.getElementById('historialTablaAsistBody').innerHTML = tbody;
+    configurarNavegacion('historialScrollAsist', 'scrollLeftHistorialAsist', 'scrollRightHistorialAst');
 }
 
 // ── Exportar Excel desde Historial ───────────────────────────────────────────
