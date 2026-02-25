@@ -5344,7 +5344,7 @@ body.dark-mode .historial-filtros {
 
 /* ── Tabla ── */
 .historial-tabla-scroll {
-    overflow-x: scroll;
+    overflow-x: auto;
     overflow-y: auto;
     max-height: 600px;
     border-radius: 8px;
