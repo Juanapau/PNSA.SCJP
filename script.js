@@ -5553,7 +5553,7 @@ function renderHistorialCalificaciones() {
     const { ras, estudiantes, calificaciones, anioSeleccionado, moduloSeleccionado } = historialState;
     const moduloNombre = document.getElementById('historialSelectModulo').selectedOptions[0]?.text || '';
 
-    document.getElementById('historialCalifInfo').textContent =
+    document.getElementById('historialInfoModulo').textContent =
         `${moduloNombre} · ${historialState.cursoSeleccionado} · ${anioSeleccionado} · ${estudiantes.length} estudiantes`;
 
     if (!ras.length || !estudiantes.length) {
@@ -5644,7 +5644,7 @@ function renderHistorialActividades() {
     const rasFiltradas = raFiltro ? ras.filter(ra => String(ra.id) === String(raFiltro)) : ras;
     const moduloNombre = document.getElementById('historialSelectModulo').selectedOptions[0]?.text || '';
 
-    document.getElementById('historialActInfo').textContent =
+    document.getElementById('historialInfoModulo').textContent =
         `${moduloNombre} · ${historialState.cursoSeleccionado} · ${anioSeleccionado}`;
 
     if (!rasFiltradas.length || !estudiantes.length) {
@@ -5711,7 +5711,7 @@ function renderHistorialAsistencia() {
     const { asistencia, estudiantes, anioSeleccionado } = historialState;
     const moduloNombre = document.getElementById('historialSelectModulo').selectedOptions[0]?.text || '';
 
-    document.getElementById('historialAsistInfo').textContent =
+    document.getElementById('historialInfoModulo').textContent =
         `${moduloNombre} · ${historialState.cursoSeleccionado} · ${anioSeleccionado}`;
 
     if (!asistencia.length || !estudiantes.length) {
