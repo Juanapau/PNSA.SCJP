@@ -5691,10 +5691,12 @@ function renderHistorialActividades() {
                 );
                 const v = act?.valor ?? null;
                 if (v !== null && v !== '') total += Number(v);
-                row += `<td class="${v !== null && v !== '' ? 'h-apro' : 'h-vacio'}">${v !== null && v !== '' ? v : '—'}</td>`;
+                const vMostrar = v !== null && v !== '' ? parseFloat(Number(v).toFixed(2)) : null;
+                row += `<td class="${vMostrar !== null ? 'h-apro' : 'h-vacio'}">${vMostrar !== null ? vMostrar : '—'}</td>`;
             }
         });
-        row += `<td class="h-total-apro">${total || '—'}</td></tr>`;
+        const totalAct = total > 0 ? parseFloat(total.toFixed(2)) : '—';
+        row += `<td class="h-total-apro">${totalAct}</td></tr>`;
         tbody += row;
     });
 
