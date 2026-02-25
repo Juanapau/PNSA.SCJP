@@ -656,11 +656,14 @@
             </div>
         </div>
 
-        <!-- Pestañas -->
-        <div class="historial-tabs">
-            <button class="historial-tab activo" data-tab="calificaciones">📝 Calificaciones</button>
-            <button class="historial-tab" data-tab="actividades">📊 Actividades</button>
-            <button class="historial-tab" data-tab="asistencia">📋 Asistencia</button>
+        <!-- Pestañas + Info módulo -->
+        <div class="historial-tabs-bar">
+            <div class="historial-tabs">
+                <button class="historial-tab activo" data-tab="calificaciones">📝 Calificaciones</button>
+                <button class="historial-tab" data-tab="actividades">📊 Actividades</button>
+                <button class="historial-tab" data-tab="asistencia">📋 Asistencia</button>
+            </div>
+            <span id="historialInfoModulo" class="historial-info-modulo"></span>
         </div>
 
         <!-- Contenido pestañas -->
@@ -681,7 +684,7 @@
             <!-- Panel Calificaciones -->
             <div id="historialPanelCalificaciones" class="historial-panel" style="display:none;">
                 <div class="historial-panel-header">
-                    <span id="historialCalifInfo" class="historial-panel-info"></span>
+                    <span></span>
                     <button id="historialBtnExcelCalif" class="btn-historial-excel">📊 Exportar Excel</button>
                 </div>
                 <div class="historial-tabla-scroll" id="historialScrollCalif">
@@ -701,14 +704,11 @@
             <!-- Panel Actividades -->
             <div id="historialPanelActividades" class="historial-panel" style="display:none;">
                 <div class="historial-panel-header">
-                    <div class="historial-panel-header-left">
-                        <span id="historialActInfo" class="historial-panel-info"></span>
-                        <div class="historial-subfilter">
-                            <label>📊 RA:</label>
-                            <select id="historialSelectRA">
-                                <option value="">Todos los RAs</option>
-                            </select>
-                        </div>
+                    <div class="historial-subfilter">
+                        <label>📊 RA:</label>
+                        <select id="historialSelectRA">
+                            <option value="">Todos los RAs</option>
+                        </select>
                     </div>
                     <button id="historialBtnExcelAct" class="btn-historial-excel">📊 Exportar Excel</button>
                 </div>
