@@ -5293,6 +5293,13 @@ body.dark-mode .historial-filtros {
     gap: 10px;
 }
 
+.historial-panel-header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
 .historial-panel-info {
     font-size: 0.88rem;
     color: var(--color-texto-secundario);
@@ -5325,21 +5332,59 @@ body.dark-mode .historial-filtros {
 .historial-subfilter {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 14px;
-    font-size: 0.88rem;
+    gap: 8px;
+    font-size: 0.85rem;
     color: var(--color-texto-secundario);
     font-weight: 600;
 }
 
 .historial-subfilter select {
-    padding: 6px 10px;
-    border-radius: 6px;
-    border: 1px solid var(--color-borde);
-    background: var(--color-superficie);
-    color: var(--color-texto);
+    padding: 7px 32px 7px 12px;
+    border-radius: 8px;
+    border: 2px solid #FFD54F;
+    background: linear-gradient(135deg, #FFF9E6 0%, #FFECB3 100%);
+    color: #F57F17;
     font-size: 0.88rem;
+    font-weight: 600;
     cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10' viewBox='0 0 16 10'%3E%3Cpath fill='%23F57F17' d='M8 10L0 2l1.5-1.5L8 7l6.5-6.5L16 2z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.historial-subfilter select:hover {
+    border-color: #FFC107;
+    background: linear-gradient(135deg, #FFECB3 0%, #FFE082 100%);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10' viewBox='0 0 16 10'%3E%3Cpath fill='%23F57F17' d='M8 10L0 2l1.5-1.5L8 7l6.5-6.5L16 2z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px;
+    box-shadow: 0 0 12px rgba(255, 193, 7, 0.4);
+    transform: translateY(-1px);
+}
+
+body.dark-mode .historial-subfilter select {
+    background: linear-gradient(135deg, #3D3010 0%, #564520 100%);
+    border-color: #FFD54F;
+    color: #FFE082;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10' viewBox='0 0 16 10'%3E%3Cpath fill='%23FFE082' d='M8 10L0 2l1.5-1.5L8 7l6.5-6.5L16 2z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px;
+}
+
+body.dark-mode .historial-subfilter select:hover {
+    background: linear-gradient(135deg, #564520 0%, #6e5828 100%);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10' viewBox='0 0 16 10'%3E%3Cpath fill='%23FFE082' d='M8 10L0 2l1.5-1.5L8 7l6.5-6.5L16 2z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px;
+    border-color: #FFC107;
+    box-shadow: 0 0 12px rgba(255, 213, 79, 0.35);
 }
 
 /* ── Tabla ── */
