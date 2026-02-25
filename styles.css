@@ -80,7 +80,6 @@ body {
     padding: 20px;
     width: 100%;
     box-sizing: border-box;
-    overflow-x: hidden;
 }
 
 /* Header */
@@ -5345,10 +5344,13 @@ body.dark-mode .historial-filtros {
 
 /* ── Tabla ── */
 .historial-tabla-scroll {
-    overflow-x: auto;
+    overflow-x: scroll;
     overflow-y: auto;
     max-height: 600px;
     border-radius: 8px;
+    position: relative;
+    display: block;
+    width: 100%;
 }
 
 .historial-tabla {
@@ -5387,6 +5389,7 @@ body.dark-mode .historial-filtros {
 .historial-tabla td.td-nombre {
     text-align: left;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .historial-tabla td.td-num {
