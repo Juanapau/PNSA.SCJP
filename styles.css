@@ -5359,11 +5359,11 @@ body.dark-mode .historial-filtros {
 .historial-subfilter select {
     padding: 8px 36px 8px 12px;
     border-radius: 8px;
-    border: 2px solid #4DD0E1;
+    border: 2px solid #4DD0E1 !important;
     background: linear-gradient(135deg, #E0F7FA 0%, #B2EBF2 100%);
     color: #006064;
     font-size: 0.88rem;
-    font-weight: 600;
+    font-weight: 400;
     cursor: pointer;
     appearance: none;
     -webkit-appearance: none;
@@ -5375,7 +5375,15 @@ body.dark-mode .historial-filtros {
     min-height: 40px;
     white-space: normal;
     height: auto;
+    outline: none !important;
+    box-shadow: none;
     transition: all 0.2s ease;
+}
+
+.historial-subfilter select:focus {
+    border: 2px solid #4DD0E1 !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(77, 208, 225, 0.2) !important;
 }
 
 .historial-subfilter select:hover {
@@ -5391,12 +5399,19 @@ body.dark-mode .historial-filtros {
 
 body.dark-mode .historial-subfilter select {
     background: linear-gradient(135deg, #1A3A40 0%, #266A77 100%);
-    border-color: #4DD0E1;
-    color: #80DEEA;
+    border: 2px solid #4DD0E1 !important;
+    color: #ffffff;
+    font-weight: 400;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10' viewBox='0 0 16 10'%3E%3Cpath fill='%2380DEEA' d='M8 10L0 2l1.5-1.5L8 7l6.5-6.5L16 2z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 12px top 50%;
     background-size: 12px;
+}
+
+body.dark-mode .historial-subfilter select:focus {
+    border: 2px solid #4DD0E1 !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(77, 208, 225, 0.25) !important;
 }
 
 body.dark-mode .historial-subfilter select:hover {
