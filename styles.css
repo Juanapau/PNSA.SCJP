@@ -5353,7 +5353,8 @@ body.dark-mode .historial-filtros {
 
 .historial-tabla {
     border-collapse: collapse;
-    width: 100%;
+    width: max-content;
+    min-width: 100%;
     font-size: 0.88rem;
 }
 
