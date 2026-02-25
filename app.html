@@ -701,15 +701,16 @@
             <!-- Panel Actividades -->
             <div id="historialPanelActividades" class="historial-panel" style="display:none;">
                 <div class="historial-panel-header">
-                    <span id="historialActInfo" class="historial-panel-info"></span>
+                    <div class="historial-panel-header-left">
+                        <span id="historialActInfo" class="historial-panel-info"></span>
+                        <div class="historial-subfilter">
+                            <label>📊 RA:</label>
+                            <select id="historialSelectRA">
+                                <option value="">Todos los RAs</option>
+                            </select>
+                        </div>
+                    </div>
                     <button id="historialBtnExcelAct" class="btn-historial-excel">📊 Exportar Excel</button>
-                </div>
-                <!-- Sub-selector de RA -->
-                <div class="historial-subfilter">
-                    <label>RA:</label>
-                    <select id="historialSelectRA">
-                        <option value="">Todos los RAs</option>
-                    </select>
                 </div>
                 <div class="historial-tabla-scroll" id="historialScrollAct">
                     <div class="scroll-nav-buttons scroll-nav-left">
