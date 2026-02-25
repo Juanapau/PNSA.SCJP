@@ -5612,9 +5612,9 @@ function renderHistorialCalificaciones() {
             row += `<td class="${cls(v3)}">${v3 !== '' && v3 !== null ? v3 : '—'}</td>`;
         });
 
-        const totalPosible = ras.reduce((s, ra) => s + (ra.valorTotal || 0), 0);
-        const apro = totalPosible > 0 && total >= totalPosible * 0.7;
-        row += `<td class="${apro ? 'h-total-apro' : 'h-total-repr'}">${total}</td>`;
+        const totalRedondeado = parseFloat(total.toFixed(2));
+        const clsTotal = totalRedondeado >= 70 ? 'h-total-apro' : 'h-total-repr';
+        row += `<td class="${clsTotal}">${totalRedondeado}</td>`;
         row += '</tr>';
         tbody += row;
     });
@@ -5628,8 +5628,8 @@ function renderHistorialCalificaciones() {
         filaGrupo += `<td colspan="3">${prom}</td>`;
         if (prom !== '—') sumaGrupo += parseFloat(prom);
     });
-    const promTotal = ras.length ? (sumaGrupo / ras.length).toFixed(1) : '—';
-    filaGrupo += `<td>${promTotal}</td></tr>`;
+    const promTotal = ras.length ? parseFloat((sumaGrupo / ras.length).toFixed(2)) : '—';
+    filaGrupo += `<td>${promTotal !== '—' ? promTotal : promTotal}</td></tr>`;
     tbody += filaGrupo;
 
     document.getElementById('historialTablaCalifBody').innerHTML = tbody;
