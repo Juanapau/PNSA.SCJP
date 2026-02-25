@@ -5306,11 +5306,11 @@ body.dark-mode .historial-filtros {
 /* ── Panel ── */
 .historial-panel-header {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     justify-content: flex-start;
     margin-bottom: 14px;
-    flex-wrap: wrap;
-    gap: 12px;
+    gap: 10px;
+    width: 100%;
 }
 
 .historial-panel-info {
@@ -5330,6 +5330,9 @@ body.dark-mode .historial-filtros {
     cursor: pointer;
     transition: all 0.2s ease;
     box-shadow: 0 2px 6px rgba(25,118,210,0.3);
+    white-space: nowrap;
+    align-self: stretch;
+    flex-shrink: 0;
 }
 
 .btn-historial-excel:hover {
@@ -5349,58 +5352,61 @@ body.dark-mode .historial-filtros {
     font-size: 0.85rem;
     color: var(--color-texto-secundario);
     font-weight: 600;
+    flex: 1;
+    min-width: 0;
 }
 
 .historial-subfilter select {
-    padding: 7px 32px 7px 12px;
+    padding: 8px 36px 8px 12px;
     border-radius: 8px;
-    border: 2px solid #FFD54F;
-    background: linear-gradient(135deg, #FFF9E6 0%, #FFECB3 100%);
-    color: #F57F17;
+    border: 2px solid #4DD0E1;
+    background: linear-gradient(135deg, #E0F7FA 0%, #B2EBF2 100%);
+    color: #006064;
     font-size: 0.88rem;
     font-weight: 600;
     cursor: pointer;
     appearance: none;
     -webkit-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10' viewBox='0 0 16 10'%3E%3Cpath fill='%23F57F17' d='M8 10L0 2l1.5-1.5L8 7l6.5-6.5L16 2z'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10' viewBox='0 0 16 10'%3E%3Cpath fill='%23006064' d='M8 10L0 2l1.5-1.5L8 7l6.5-6.5L16 2z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 10px center;
+    background-position: right 12px top 50%;
     background-size: 12px;
-    width: auto;
-    min-width: 180px;
-    max-width: 280px;
+    width: 100%;
+    min-height: 40px;
+    white-space: normal;
+    height: auto;
     transition: all 0.2s ease;
 }
 
 .historial-subfilter select:hover {
-    border-color: #FFC107;
-    background: linear-gradient(135deg, #FFECB3 0%, #FFE082 100%);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10' viewBox='0 0 16 10'%3E%3Cpath fill='%23F57F17' d='M8 10L0 2l1.5-1.5L8 7l6.5-6.5L16 2z'/%3E%3C/svg%3E");
+    border-color: #00ACC1;
+    background: linear-gradient(135deg, #B2EBF2 0%, #80DEEA 100%);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10' viewBox='0 0 16 10'%3E%3Cpath fill='%23006064' d='M8 10L0 2l1.5-1.5L8 7l6.5-6.5L16 2z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 10px center;
+    background-position: right 12px top 50%;
     background-size: 12px;
-    box-shadow: 0 0 12px rgba(255, 193, 7, 0.4);
+    box-shadow: 0 0 12px rgba(77, 208, 225, 0.4);
     transform: translateY(-1px);
 }
 
 body.dark-mode .historial-subfilter select {
-    background: linear-gradient(135deg, #3D3010 0%, #564520 100%);
-    border-color: #FFD54F;
-    color: #FFE082;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10' viewBox='0 0 16 10'%3E%3Cpath fill='%23FFE082' d='M8 10L0 2l1.5-1.5L8 7l6.5-6.5L16 2z'/%3E%3C/svg%3E");
+    background: linear-gradient(135deg, #1A3A40 0%, #266A77 100%);
+    border-color: #4DD0E1;
+    color: #80DEEA;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10' viewBox='0 0 16 10'%3E%3Cpath fill='%2380DEEA' d='M8 10L0 2l1.5-1.5L8 7l6.5-6.5L16 2z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 10px center;
+    background-position: right 12px top 50%;
     background-size: 12px;
 }
 
 body.dark-mode .historial-subfilter select:hover {
-    background: linear-gradient(135deg, #564520 0%, #6e5828 100%);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10' viewBox='0 0 16 10'%3E%3Cpath fill='%23FFE082' d='M8 10L0 2l1.5-1.5L8 7l6.5-6.5L16 2z'/%3E%3C/svg%3E");
+    background: linear-gradient(135deg, #266A77 0%, #2d8a9e 100%);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10' viewBox='0 0 16 10'%3E%3Cpath fill='%2380DEEA' d='M8 10L0 2l1.5-1.5L8 7l6.5-6.5L16 2z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 10px center;
+    background-position: right 12px top 50%;
     background-size: 12px;
-    border-color: #FFC107;
-    box-shadow: 0 0 12px rgba(255, 213, 79, 0.35);
+    border-color: #00ACC1;
+    box-shadow: 0 0 12px rgba(77, 208, 225, 0.35);
 }
 
 /* ── Tabla ── */
