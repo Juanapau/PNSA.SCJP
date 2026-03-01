@@ -1943,19 +1943,35 @@ function configurarNavegacion(contenedorId, btnLeftId, btnRightId) {
         }
     }
     
-    // Hover — iniciar y detener scroll continuo
-    btnLeft.addEventListener('mouseenter', () => iniciarScrollContinuo('left'));
-    btnLeft.addEventListener('mouseleave', detenerScroll);
-    btnRight.addEventListener('mouseenter', () => iniciarScrollContinuo('right'));
-    btnRight.addEventListener('mouseleave', detenerScroll);
-    
-    // También mantener el click para dispositivos táctiles
-    btnLeft.addEventListener('click', () => {
-        contenedor.scrollBy({ left: -300, behavior: 'smooth' });
-    });
-    btnRight.addEventListener('click', () => {
-        contenedor.scrollBy({ left: 300, behavior: 'smooth' });
-    });
+    // Detectar si es dispositivo táctil
+    const esTactil = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+    if (esTactil) {
+        // Móvil/táctil: cada clic desplaza un paso fijo (no scroll continuo)
+        const PASO_MOVIL = 150; // px por clic
+        btnLeft.addEventListener('click', () => {
+            contenedor.scrollBy({ left: -PASO_MOVIL, behavior: 'smooth' });
+            setTimeout(actualizarBotones, 350);
+        });
+        btnRight.addEventListener('click', () => {
+            contenedor.scrollBy({ left: PASO_MOVIL, behavior: 'smooth' });
+            setTimeout(actualizarBotones, 350);
+        });
+    } else {
+        // Escritorio: scroll continuo mientras el cursor esté encima
+        btnLeft.addEventListener('mouseenter', () => iniciarScrollContinuo('left'));
+        btnLeft.addEventListener('mouseleave', detenerScroll);
+        btnRight.addEventListener('mouseenter', () => iniciarScrollContinuo('right'));
+        btnRight.addEventListener('mouseleave', detenerScroll);
+
+        // Click de escritorio como respaldo
+        btnLeft.addEventListener('click', () => {
+            contenedor.scrollBy({ left: -300, behavior: 'smooth' });
+        });
+        btnRight.addEventListener('click', () => {
+            contenedor.scrollBy({ left: 300, behavior: 'smooth' });
+        });
+    }
     
     contenedor.addEventListener('scroll', actualizarBotones);
     window.addEventListener('resize', actualizarBotones);
