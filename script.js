@@ -824,7 +824,7 @@ function generarTablaRegistro() {
             bodyHTML += `<td class="celda-oportunidad"><input type="number" class="input-oportunidad-simple" data-estudiante="${estudiante.id}" data-ra="${ra.id}" data-oportunidad="3" value="${calificacion.op3 !== null && calificacion.op3 !== undefined ? calificacion.op3 : ''}" min="0" max="${ra.valorTotal}"></td>`;
         });
         
-        bodyHTML += `<td class="celda-total">${totalEstudiante}</td>`;
+        bodyHTML += `<td class="celda-total">${Math.round(totalEstudiante)}</td>`;
         bodyHTML += '</tr>';
     });
     
